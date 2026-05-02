@@ -32,10 +32,13 @@ The timeline layer computes journal-level medians:
 - `index.html` - static dashboard prototype with demo data
 - `data/journals.json` - generated journal registry consumed by the dashboard
 - `data/scopus_registry.csv` - normalized Scopus source title list
+- `data/timelines_seed.csv` - seed timeline aggregates used while the harvester is being built
 - `data/source_manifest.json` - source provenance and pending sources
 - `fetch_pubmed.py` - PubMed data fetcher and parser
 - `scripts/normalize_journals.py` - CSV normalizer for official journal lists
 - `scripts/xlsx_to_registry.py` - standard-library XLSX converter for registry exports
+- `scripts/merge_timelines.py` - joins timeline evidence into the registry by ISSN/eISSN
+- `scripts/harvest_pubmed_timelines.py` - batch PubMed lifecycle-date harvester for journals with ISSN/eISSN
 - `data/import_template.csv` - registry import format
 - `data/source_strategy.md` - long-term source plan
 - `README.md` - project notes and data assumptions
@@ -48,6 +51,14 @@ The current generated registry includes the official Elsevier Scopus Source titl
 
 Scopus and Web of Science title lists do not include manuscript lifecycle dates. Publication timeline estimates must be harvested separately from article metadata, then joined back to journals by ISSN/eISSN/title.
 
+## Current Product Features
+
+- Search by title, publisher, ISSN/eISSN, and subject.
+- Filter by Scopus, Web of Science, ABDC, field, ABDC rating, known timeline status, maximum total days, and minimum evidence articles.
+- Sort by fastest total publication, fastest review decision, fastest production, strongest evidence, or title.
+- Copy a shareable master link that preserves the current filters.
+- Export current filtered results to CSV.
+
 ## Next Build Steps
 
 1. Import Web of Science Master Journal List/Core Collection exports after login.
@@ -56,3 +67,16 @@ Scopus and Web of Science title lists do not include manuscript lifecycle dates.
 4. Search PubMed/Crossref/publisher metadata for lifecycle dates.
 5. Aggregate timing samples by journal and display confidence.
 6. Add background refresh jobs for monthly Scopus/WoS list updates.
+
+## Rebuild Data
+
+```powershell
+python scripts\normalize_journals.py data\scopus_registry.csv -o data\journals_registry.json
+python scripts\merge_timelines.py data\journals_registry.json data\timelines_seed.csv -o data\journals.json
+```
+
+To grow the timeline evidence from PubMed:
+
+```powershell
+python scripts\harvest_pubmed_timelines.py data\journals.json -o data\timelines_pubmed.csv --limit-journals 100 --articles-per-journal 80
+```

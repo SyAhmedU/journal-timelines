@@ -11,6 +11,14 @@
         "data/scopus_registry.csv",
         "data/journals.json"
       ]
+    },
+    {
+      "source": "Seed timeline evidence",
+      "provider": "Project-maintained CSV",
+      "file": "data/timelines_seed.csv",
+      "retrieved": "2026-05-03",
+      "rowsConverted": 6,
+      "note": "Temporary seed timeline aggregates used to test ranking and filters. Replace with harvested article-level evidence."
     }
   ],
   "pending": [

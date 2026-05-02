@@ -53,7 +53,7 @@
 
   main {
     display: grid;
-    grid-template-columns: 310px 1fr;
+    grid-template-columns: 320px 1fr;
     min-height: calc(100vh - 75px);
   }
 
@@ -75,7 +75,7 @@
     text-transform: uppercase;
   }
 
-  input, select, textarea {
+  input, select {
     width: 100%;
     border: 1px solid var(--line);
     border-radius: 8px;
@@ -86,9 +86,8 @@
     outline: none;
   }
 
-  textarea { min-height: 118px; resize: vertical; }
-  input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
-  .field { margin-bottom: 16px; }
+  input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
+  .field { margin-bottom: 15px; }
 
   .button {
     width: 100%;
@@ -146,6 +145,8 @@
   }
 
   .panel-title { font-weight: 800; }
+  .small { color: var(--muted); font-size: 12px; margin-top: 6px; }
+
   .chips { display: flex; gap: 7px; flex-wrap: wrap; }
   .chip, .badge {
     border-radius: 999px;
@@ -173,10 +174,10 @@
     text-transform: uppercase;
     background: #fbfcfe;
   }
-  tr:last-child td { border-bottom: 0; }
 
   .journal { font-weight: 800; }
   .publisher { color: var(--muted); margin-top: 3px; font-size: 12px; }
+
   .score {
     display: inline-flex;
     align-items: center;
@@ -199,7 +200,6 @@
     margin-top: 8px;
   }
   .bar > span { display: block; height: 100%; background: var(--blue); border-radius: inherit; }
-  .small { color: var(--muted); font-size: 12px; margin-top: 6px; }
 
   .empty {
     padding: 30px 16px;
@@ -211,7 +211,7 @@
     main { grid-template-columns: 1fr; }
     aside { border-right: 0; border-bottom: 1px solid var(--line); }
     .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    table { min-width: 860px; }
+    table { min-width: 920px; }
     .table-wrap { overflow-x: auto; }
   }
 </style>
@@ -221,7 +221,7 @@
     <div class="mark">JT</div>
     <div>
       <h1>Journal Timelines</h1>
-      <div class="sub">Compare indexed journals and estimate publication speed where lifecycle dates exist.</div>
+      <div class="sub">Find indexed journals and rank known options by publication speed.</div>
     </div>
   </header>
 
@@ -229,23 +229,23 @@
     <aside>
       <div class="field">
         <label for="query">Search journals</label>
-        <input id="query" placeholder="e.g. marketing, MIS Quarterly, 0022" />
+        <input id="query" placeholder="Title, publisher, ISSN, subject" />
       </div>
 
       <div class="field">
         <label for="field">Field</label>
         <select id="field">
           <option value="all">All fields</option>
-          <option value="business">Business</option>
-          <option value="economics">Economics</option>
-          <option value="finance">Finance</option>
-          <option value="information systems">Information systems</option>
-          <option value="management">Management</option>
-          <option value="marketing">Marketing</option>
-          <option value="public health">Public health</option>
-          <option value="medicine">Medicine</option>
-          <option value="psychology">Psychology</option>
-          <option value="social science">Social science</option>
+          <option value="asjc-14">Business, management & accounting</option>
+          <option value="asjc-20">Economics, econometrics & finance</option>
+          <option value="asjc-17">Computer science</option>
+          <option value="asjc-27">Medicine</option>
+          <option value="asjc-28">Neuroscience</option>
+          <option value="asjc-32">Psychology</option>
+          <option value="asjc-33">Social sciences</option>
+          <option value="asjc-12">Arts & humanities</option>
+          <option value="asjc-23">Environmental science</option>
+          <option value="asjc-26">Mathematics</option>
         </select>
       </div>
 
@@ -273,24 +273,41 @@
       </div>
 
       <div class="field">
-        <label for="priority">Optimize for</label>
-        <select id="priority">
-          <option value="total">Submission to publication</option>
-          <option value="acceptance">Submission to acceptance</option>
-          <option value="production">Acceptance to publication</option>
+        <label for="timelineStatus">Timeline evidence</label>
+        <select id="timelineStatus">
+          <option value="all">Known or unknown</option>
+          <option value="known">Known timelines only</option>
+          <option value="unknown">Needs evidence</option>
         </select>
       </div>
 
       <div class="field">
-        <label for="pmids">PMIDs to import</label>
-        <textarea id="pmids" placeholder="Paste PMIDs, one per line or comma separated"></textarea>
+        <label for="sortBy">Sort by</label>
+        <select id="sortBy">
+          <option value="fastest-total">Fastest total publication</option>
+          <option value="fastest-acceptance">Fastest review decision</option>
+          <option value="fastest-production">Fastest production after acceptance</option>
+          <option value="evidence">Strongest evidence</option>
+          <option value="title">Journal title</option>
+        </select>
       </div>
 
-      <button class="button" id="demo">Load demo PMID list</button>
+      <div class="field">
+        <label for="maxDays">Maximum total days</label>
+        <input id="maxDays" inputmode="numeric" placeholder="e.g. 180" />
+      </div>
+
+      <div class="field">
+        <label for="minArticles">Minimum evidence articles</label>
+        <input id="minArticles" inputmode="numeric" placeholder="e.g. 25" />
+      </div>
+
+      <button class="button" id="share">Copy master link</button>
+      <button class="button secondary" id="exportCsv">Export current results</button>
       <button class="button secondary" id="clear">Clear filters</button>
 
       <div class="notice">
-        Scopus, Web of Science, and ABDC membership identify journals. Timeline estimates require article records with received, accepted, and publication dates.
+        Use known-timeline filters for fastest publishing options. Unknown means the journal is indexed, but we still need reliable article lifecycle evidence.
       </div>
     </aside>
 
@@ -299,36 +316,35 @@
         <div class="stat">
           <label>Journals</label>
           <div class="value" id="stat-journals">0</div>
-          <div class="caption">matching registry filters</div>
+          <div class="caption">matching filters</div>
+        </div>
+        <div class="stat">
+          <label>Known Timelines</label>
+          <div class="value" id="stat-known">0</div>
+          <div class="caption">with evidence</div>
+        </div>
+        <div class="stat">
+          <label>Fastest</label>
+          <div class="value" id="stat-fastest">--</div>
+          <div class="caption">best known total lag</div>
         </div>
         <div class="stat">
           <label>Median Total</label>
           <div class="value" id="stat-total">--</div>
           <div class="caption">known submission to publication</div>
         </div>
-        <div class="stat">
-          <label>Fastest</label>
-          <div class="value" id="stat-fastest">--</div>
-          <div class="caption">best known median total lag</div>
-        </div>
-        <div class="stat">
-          <label>Coverage</label>
-          <div class="value" id="stat-coverage">--</div>
-          <div class="caption">records with full dates</div>
-        </div>
       </div>
 
       <div class="panel">
         <div class="panel-head">
           <div>
-            <div class="panel-title">Journal Registry</div>
-            <div class="small">Indexed-journal list with timing evidence where available.</div>
+            <div class="panel-title">Fastest Publishing Journals</div>
+            <div class="small" id="result-summary">Loading registry...</div>
           </div>
           <div class="chips">
             <span class="chip">Scopus</span>
-            <span class="chip">Web of Science</span>
-            <span class="chip">ABDC</span>
-            <span class="chip">Median days</span>
+            <span class="chip">WoS-ready</span>
+            <span class="chip">Timeline evidence</span>
           </div>
         </div>
         <div class="table-wrap">
@@ -338,12 +354,14 @@
                 <th>Journal</th>
                 <th>Indexes</th>
                 <th>ABDC</th>
-                <th>Total</th>
+                <th>Timeline</th>
                 <th>Evidence</th>
-                <th>Fit</th>
+                <th>Subject</th>
               </tr>
             </thead>
-            <tbody id="rows"></tbody>
+            <tbody id="rows">
+              <tr><td colspan="6"><div class="empty">Loading journal registry...</div></td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -351,273 +369,43 @@
   </main>
 
 <script>
-const fallbackJournals = [
-  {
-    journal: "PLOS ONE",
-    publisher: "Public Library of Science",
-    field: "medicine",
-    issn: "1932-6203",
-    eissn: "1932-6203",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SCIE"],
-    abdcRating: null,
-    articles: 128,
-    coverage: 0.78,
-    submissionToAcceptance: 112,
-    acceptanceToPublication: 29,
-    submissionToPublication: 143,
-  },
-  {
-    journal: "BMJ Open",
-    publisher: "BMJ",
-    field: "public health",
-    issn: "2044-6055",
-    eissn: "2044-6055",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SCIE"],
-    abdcRating: null,
-    articles: 84,
-    coverage: 0.64,
-    submissionToAcceptance: 135,
-    acceptanceToPublication: 37,
-    submissionToPublication: 174,
-  },
-  {
-    journal: "Frontiers in Psychology",
-    publisher: "Frontiers",
-    field: "psychology",
-    issn: "1664-1078",
-    eissn: "1664-1078",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SSCI", "SCIE"],
-    abdcRating: null,
-    articles: 72,
-    coverage: 0.71,
-    submissionToAcceptance: 96,
-    acceptanceToPublication: 22,
-    submissionToPublication: 121,
-  },
-  {
-    journal: "BMC Public Health",
-    publisher: "Springer Nature",
-    field: "public health",
-    issn: "1471-2458",
-    eissn: "1471-2458",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SCIE", "SSCI"],
-    abdcRating: null,
-    articles: 66,
-    coverage: 0.58,
-    submissionToAcceptance: 151,
-    acceptanceToPublication: 33,
-    submissionToPublication: 187,
-  },
-  {
-    journal: "Social Science & Medicine",
-    publisher: "Elsevier",
-    field: "social science",
-    issn: "0277-9536",
-    eissn: "1873-5347",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SSCI"],
-    abdcRating: "A*",
-    articles: 34,
-    coverage: 0.29,
-    submissionToAcceptance: 170,
-    acceptanceToPublication: 44,
-    submissionToPublication: 219,
-  },
-  {
-    journal: "Journal of Medical Internet Research",
-    publisher: "JMIR Publications",
-    field: "medicine",
-    issn: "1438-8871",
-    eissn: "1438-8871",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SCIE"],
-    abdcRating: null,
-    articles: 49,
-    coverage: 0.61,
-    submissionToAcceptance: 88,
-    acceptanceToPublication: 31,
-    submissionToPublication: 123,
-  },
-  {
-    journal: "Academy of Management Journal",
-    publisher: "Academy of Management",
-    field: "management",
-    issn: "0001-4273",
-    eissn: "1948-0989",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SSCI"],
-    abdcRating: "A*",
-    articles: 0,
-    coverage: 0,
-    submissionToAcceptance: null,
-    acceptanceToPublication: null,
-    submissionToPublication: null,
-  },
-  {
-    journal: "Academy of Management Review",
-    publisher: "Academy of Management",
-    field: "management",
-    issn: "0363-7425",
-    eissn: "1930-3807",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SSCI"],
-    abdcRating: "A*",
-    articles: 0,
-    coverage: 0,
-    submissionToAcceptance: null,
-    acceptanceToPublication: null,
-    submissionToPublication: null,
-  },
-  {
-    journal: "Journal of Marketing",
-    publisher: "SAGE Publications",
-    field: "marketing",
-    issn: "0022-2429",
-    eissn: "1547-7185",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SSCI"],
-    abdcRating: "A*",
-    articles: 0,
-    coverage: 0,
-    submissionToAcceptance: null,
-    acceptanceToPublication: null,
-    submissionToPublication: null,
-  },
-  {
-    journal: "Journal of Consumer Research",
-    publisher: "Oxford University Press",
-    field: "marketing",
-    issn: "0093-5301",
-    eissn: "1537-5277",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SSCI"],
-    abdcRating: "A*",
-    articles: 0,
-    coverage: 0,
-    submissionToAcceptance: null,
-    acceptanceToPublication: null,
-    submissionToPublication: null,
-  },
-  {
-    journal: "Information Systems Research",
-    publisher: "INFORMS",
-    field: "information systems",
-    issn: "1047-7047",
-    eissn: "1526-5536",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SSCI", "SCIE"],
-    abdcRating: "A*",
-    articles: 0,
-    coverage: 0,
-    submissionToAcceptance: null,
-    acceptanceToPublication: null,
-    submissionToPublication: null,
-  },
-  {
-    journal: "MIS Quarterly",
-    publisher: "Management Information Systems Research Center",
-    field: "information systems",
-    issn: "0276-7783",
-    eissn: "2162-9730",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SSCI"],
-    abdcRating: "A*",
-    articles: 0,
-    coverage: 0,
-    submissionToAcceptance: null,
-    acceptanceToPublication: null,
-    submissionToPublication: null,
-  },
-  {
-    journal: "Journal of Finance",
-    publisher: "Wiley",
-    field: "finance",
-    issn: "0022-1082",
-    eissn: "1540-6261",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SSCI"],
-    abdcRating: "A*",
-    articles: 0,
-    coverage: 0,
-    submissionToAcceptance: null,
-    acceptanceToPublication: null,
-    submissionToPublication: null,
-  },
-  {
-    journal: "American Economic Review",
-    publisher: "American Economic Association",
-    field: "economics",
-    issn: "0002-8282",
-    eissn: "1944-7981",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SSCI"],
-    abdcRating: "A*",
-    articles: 0,
-    coverage: 0,
-    submissionToAcceptance: null,
-    acceptanceToPublication: null,
-    submissionToPublication: null,
-  },
-  {
-    journal: "Accounting, Organizations and Society",
-    publisher: "Elsevier",
-    field: "business",
-    issn: "0361-3682",
-    eissn: "1873-6289",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["SSCI"],
-    abdcRating: "A*",
-    articles: 0,
-    coverage: 0,
-    submissionToAcceptance: null,
-    acceptanceToPublication: null,
-    submissionToPublication: null,
-  },
-  {
-    journal: "Australasian Marketing Journal",
-    publisher: "SAGE Publications",
-    field: "marketing",
-    issn: "1441-3582",
-    eissn: "1839-3349",
-    scopus: true,
-    wos: true,
-    wosIndexes: ["ESCI"],
-    abdcRating: "A",
-    articles: 0,
-    coverage: 0,
-    submissionToAcceptance: null,
-    acceptanceToPublication: null,
-    submissionToPublication: null,
-  },
-];
-
-let journals = fallbackJournals;
-let registryLoaded = false;
+let journals = [];
 const RENDER_LIMIT = 300;
 
-const metricMap = {
-  total: "submissionToPublication",
-  acceptance: "submissionToAcceptance",
-  production: "acceptanceToPublication",
+const sortMap = {
+  "fastest-total": "submissionToPublication",
+  "fastest-acceptance": "submissionToAcceptance",
+  "fastest-production": "acceptanceToPublication",
+};
+
+const asjcSubjects = {
+  "10": "Multidisciplinary",
+  "11": "Agricultural and biological sciences",
+  "12": "Arts and humanities",
+  "13": "Biochemistry, genetics and molecular biology",
+  "14": "Business, management and accounting",
+  "15": "Chemical engineering",
+  "16": "Chemistry",
+  "17": "Computer science",
+  "18": "Decision sciences",
+  "19": "Earth and planetary sciences",
+  "20": "Economics, econometrics and finance",
+  "21": "Energy",
+  "22": "Engineering",
+  "23": "Environmental science",
+  "24": "Immunology and microbiology",
+  "25": "Materials science",
+  "26": "Mathematics",
+  "27": "Medicine",
+  "28": "Neuroscience",
+  "29": "Nursing",
+  "30": "Pharmacology, toxicology and pharmaceutics",
+  "31": "Physics and astronomy",
+  "32": "Psychology",
+  "33": "Social sciences",
+  "34": "Veterinary",
+  "35": "Dentistry",
+  "36": "Health professions",
 };
 
 const els = {
@@ -625,14 +413,18 @@ const els = {
   field: document.getElementById("field"),
   indexSource: document.getElementById("indexSource"),
   abdcRating: document.getElementById("abdcRating"),
-  priority: document.getElementById("priority"),
-  pmids: document.getElementById("pmids"),
+  timelineStatus: document.getElementById("timelineStatus"),
+  sortBy: document.getElementById("sortBy"),
+  maxDays: document.getElementById("maxDays"),
+  minArticles: document.getElementById("minArticles"),
   rows: document.getElementById("rows"),
+  resultSummary: document.getElementById("result-summary"),
   statJournals: document.getElementById("stat-journals"),
+  statKnown: document.getElementById("stat-known"),
   statTotal: document.getElementById("stat-total"),
   statFastest: document.getElementById("stat-fastest"),
-  statCoverage: document.getElementById("stat-coverage"),
-  demo: document.getElementById("demo"),
+  share: document.getElementById("share"),
+  exportCsv: document.getElementById("exportCsv"),
   clear: document.getElementById("clear"),
 };
 
@@ -643,19 +435,56 @@ function median(values) {
   return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
 }
 
+function normIssn(value) {
+  return String(value || "").replace(/[^0-9xX]/g, "").toUpperCase();
+}
+
+function hasTimeline(item) {
+  return item.submissionToPublication != null;
+}
+
 function scoreClass(days) {
-  if (days === null || days === undefined) return "medium";
+  if (days == null) return "medium";
   if (days <= 130) return "fast";
   if (days <= 185) return "medium";
   return "slow";
 }
 
+function fieldCodes(item) {
+  return String(item.field || "").split(/[;,\s]+/).map(code => code.trim()).filter(Boolean);
+}
+
+function subjectLabels(item) {
+  const labels = [...new Set(fieldCodes(item).map(code => asjcSubjects[code.slice(0, 2)]).filter(Boolean))];
+  return labels.length ? labels : [item.field || "Unknown"];
+}
+
+function fieldMatches(item, selected) {
+  if (selected === "all") return true;
+  if (!selected.startsWith("asjc-")) return String(item.field || "").toLowerCase() === selected;
+  const prefix = selected.replace("asjc-", "");
+  return fieldCodes(item).some(code => code.startsWith(prefix));
+}
+
+function confidenceLabel(item) {
+  const articles = item.articles || 0;
+  const coverage = item.coverage || 0;
+  if (!hasTimeline(item)) return "No timeline";
+  if (articles >= 50 && coverage >= 0.5) return "High confidence";
+  if (articles >= 20 && coverage >= 0.25) return "Medium confidence";
+  return "Low confidence";
+}
+
 function fitLabel(item) {
-  if (item.submissionToPublication === null) return "Needs timeline evidence";
-  if (item.coverage < 0.35) return "Low confidence";
-  if (item.submissionToPublication <= 130) return "Fast path";
-  if (item.acceptanceToPublication <= 30) return "Quick production";
+  if (!hasTimeline(item)) return "Needs evidence";
+  if ((item.submissionToPublication || 9999) <= 130) return "Fast path";
+  if ((item.acceptanceToPublication || 9999) <= 30) return "Quick production";
   return "Standard";
+}
+
+function parsePositiveInt(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 function filteredData() {
@@ -664,10 +493,14 @@ function filteredData() {
   const field = els.field.value;
   const indexSource = els.indexSource.value;
   const abdcRating = els.abdcRating.value;
-  const metric = metricMap[els.priority.value];
+  const timelineStatus = els.timelineStatus.value;
+  const sortBy = els.sortBy.value;
+  const metric = sortMap[sortBy] || "submissionToPublication";
+  const maxDays = parsePositiveInt(els.maxDays.value);
+  const minArticles = parsePositiveInt(els.minArticles.value);
 
   return journals
-    .filter(item => field === "all" || item.field === field)
+    .filter(item => fieldMatches(item, field))
     .filter(item => {
       if (indexSource === "all") return true;
       if (indexSource === "scopus") return item.scopus;
@@ -682,26 +515,39 @@ function filteredData() {
       return item.abdcRating === abdcRating;
     })
     .filter(item => {
-      const haystack = `${item.journal} ${item.publisher} ${item.field} ${item.issn} ${item.eissn || ""} ${item.abdcRating || ""} ${(item.wosIndexes || []).join(" ")}`.toLowerCase();
+      if (timelineStatus === "known") return hasTimeline(item);
+      if (timelineStatus === "unknown") return !hasTimeline(item);
+      return true;
+    })
+    .filter(item => !maxDays || (hasTimeline(item) && item.submissionToPublication <= maxDays))
+    .filter(item => !minArticles || ((item.articles || 0) >= minArticles))
+    .filter(item => {
+      const subjects = subjectLabels(item).join(" ");
+      const haystack = `${item.journal} ${item.publisher} ${subjects} ${item.field} ${item.issn} ${item.eissn || ""} ${normIssn(item.issn)} ${normIssn(item.eissn)} ${item.abdcRating || ""} ${(item.wosIndexes || []).join(" ")}`.toLowerCase();
       const looseHaystack = haystack.replace(/[^a-z0-9]+/g, "");
       return !q || haystack.includes(q) || looseHaystack.includes(qLoose);
     })
     .sort((a, b) => {
+      if (sortBy === "title") return String(a.journal || "").localeCompare(String(b.journal || ""));
+      if (sortBy === "evidence") {
+        return (b.articles || 0) - (a.articles || 0) || (b.coverage || 0) - (a.coverage || 0) || String(a.journal || "").localeCompare(String(b.journal || ""));
+      }
       const av = a[metric] ?? Number.POSITIVE_INFINITY;
       const bv = b[metric] ?? Number.POSITIVE_INFINITY;
-      return av - bv || a.journal.localeCompare(b.journal);
+      return av - bv || String(a.journal || "").localeCompare(String(b.journal || ""));
     });
 }
 
 function render() {
   const data = filteredData();
-  const timedData = data.filter(item => item.submissionToPublication != null);
+  const timedData = data.filter(hasTimeline);
   const maxTotal = Math.max(...journals.map(item => item.submissionToPublication || 0), 1);
 
-  els.statJournals.textContent = data.length;
+  els.statJournals.textContent = data.length.toLocaleString();
+  els.statKnown.textContent = timedData.length.toLocaleString();
   els.statTotal.textContent = timedData.length ? `${median(timedData.map(item => item.submissionToPublication))}d` : "--";
   els.statFastest.textContent = timedData.length ? `${timedData[0].submissionToPublication}d` : "--";
-  els.statCoverage.textContent = data.length ? `${Math.round(median(data.map(item => item.coverage * 100)))}%` : "--";
+  els.resultSummary.textContent = `${data.length.toLocaleString()} matching journals. ${timedData.length.toLocaleString()} have timeline evidence.`;
 
   if (!data.length) {
     els.rows.innerHTML = `<tr><td colspan="6"><div class="empty">No journals match the current filters.</div></td></tr>`;
@@ -714,9 +560,8 @@ function render() {
     : "";
 
   els.rows.innerHTML = noticeRow + visible.map(item => {
-    const hasTimeline = item.submissionToPublication != null;
-    const width = hasTimeline ? Math.max(8, Math.round((item.submissionToPublication / maxTotal) * 100)) : 0;
-    const klass = scoreClass(item.submissionToPublication);
+    const known = hasTimeline(item);
+    const width = known ? Math.max(8, Math.round((item.submissionToPublication / maxTotal) * 100)) : 0;
     const indexes = [
       item.scopus ? "Scopus" : null,
       item.wos ? `WoS ${item.wosIndexes?.join("/") || ""}`.trim() : null,
@@ -725,24 +570,104 @@ function render() {
     return `
       <tr>
         <td>
-          <div class="journal">${item.journal}</div>
-          <div class="publisher">${item.publisher} · ISSN ${item.issn}${item.eissn ? ` · eISSN ${item.eissn}` : ""}</div>
+          <div class="journal">${item.journal || "Untitled journal"}</div>
+          <div class="publisher">${item.publisher || "Unknown publisher"} · ISSN ${item.issn || "n/a"}${item.eissn ? ` · eISSN ${item.eissn}` : ""}</div>
         </td>
         <td>${indexes.length ? indexes.map(label => `<span class="badge">${label}</span>`).join("") : "Unverified"}</td>
         <td><span class="score ${item.abdcRating ? "fast" : "medium"}">${item.abdcRating || "Not listed"}</span></td>
         <td>
-          <span class="score ${klass}">${hasTimeline ? `${item.submissionToPublication}d` : "Unknown"}</span>
-          ${hasTimeline ? `<div class="bar" aria-hidden="true"><span style="width:${width}%"></span></div>` : `<div class="small">No full-date sample yet</div>`}
+          <span class="score ${scoreClass(item.submissionToPublication)}">${known ? `${item.submissionToPublication}d` : "Unknown"}</span>
+          ${known ? `<div class="small">${item.submissionToAcceptance ?? "--"}d review · ${item.acceptanceToPublication ?? "--"}d production</div><div class="bar" aria-hidden="true"><span style="width:${width}%"></span></div>` : `<div class="small">No full-date sample yet</div>`}
         </td>
-        <td>${item.articles || 0} articles<div class="small">${Math.round((item.coverage || 0) * 100)}% full-date coverage</div></td>
-        <td>${fitLabel(item)}<div class="small">${item.field || "unknown"}</div></td>
+        <td>${item.articles || 0} articles<div class="small">${Math.round((item.coverage || 0) * 100)}% coverage · ${confidenceLabel(item)}</div></td>
+        <td>${subjectLabels(item).slice(0, 2).join(", ")}<div class="small">${fitLabel(item)}</div></td>
       </tr>
     `;
   }).join("");
 }
 
-function loadDemoPmids() {
-  els.pmids.value = "38912345\n38899110\n38870021\n38765432";
+function updateUrl(push = false) {
+  const params = new URLSearchParams();
+  const controls = {
+    q: els.query,
+    field: els.field,
+    index: els.indexSource,
+    abdc: els.abdcRating,
+    timeline: els.timelineStatus,
+    sort: els.sortBy,
+    maxDays: els.maxDays,
+    minArticles: els.minArticles,
+  };
+  Object.entries(controls).forEach(([key, element]) => {
+    if (element.value && element.value !== "all" && element.value !== "fastest-total") params.set(key, element.value);
+  });
+  const url = `${location.pathname}${params.toString() ? `?${params}` : ""}`;
+  history[push ? "pushState" : "replaceState"](null, "", url);
+}
+
+function applyUrl() {
+  const params = new URLSearchParams(location.search);
+  const controls = {
+    q: els.query,
+    field: els.field,
+    index: els.indexSource,
+    abdc: els.abdcRating,
+    timeline: els.timelineStatus,
+    sort: els.sortBy,
+    maxDays: els.maxDays,
+    minArticles: els.minArticles,
+  };
+  Object.entries(controls).forEach(([key, element]) => {
+    if (params.has(key)) element.value = params.get(key);
+  });
+}
+
+function rerenderWithUrl() {
+  render();
+  updateUrl();
+}
+
+async function copyShareLink() {
+  updateUrl(true);
+  try {
+    await navigator.clipboard.writeText(location.href);
+    els.share.textContent = "Link copied";
+    setTimeout(() => { els.share.textContent = "Copy master link"; }, 1400);
+  } catch {
+    prompt("Copy this link", location.href);
+  }
+}
+
+function csvEscape(value) {
+  const text = String(value ?? "");
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function exportCurrentCsv() {
+  const rows = filteredData().slice(0, 5000);
+  const header = ["journal", "publisher", "issn", "eissn", "scopus", "wos", "abdc", "total_days", "review_days", "production_days", "articles", "coverage", "confidence", "subjects"];
+  const lines = [header.join(",")].concat(rows.map(item => [
+    item.journal,
+    item.publisher,
+    item.issn,
+    item.eissn,
+    item.scopus ? "yes" : "no",
+    item.wos ? "yes" : "no",
+    item.abdcRating || "",
+    item.submissionToPublication ?? "",
+    item.submissionToAcceptance ?? "",
+    item.acceptanceToPublication ?? "",
+    item.articles || 0,
+    item.coverage || 0,
+    confidenceLabel(item),
+    subjectLabels(item).join("; "),
+  ].map(csvEscape).join(",")));
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "journal-timelines-results.csv";
+  link.click();
+  URL.revokeObjectURL(link.href);
 }
 
 async function loadRegistry() {
@@ -750,33 +675,31 @@ async function loadRegistry() {
     const response = await fetch("data/journals.json", { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    if (Array.isArray(data) && data.length) {
-      journals = data;
-      registryLoaded = true;
-      render();
-    }
+    journals = Array.isArray(data) ? data : [];
+    render();
   } catch (error) {
-    registryLoaded = false;
+    els.resultSummary.textContent = "Could not load data/journals.json.";
+    els.rows.innerHTML = `<tr><td colspan="6"><div class="empty">Registry failed to load.</div></td></tr>`;
   }
 }
 
-els.query.addEventListener("input", render);
-els.field.addEventListener("change", render);
-els.indexSource.addEventListener("change", render);
-els.abdcRating.addEventListener("change", render);
-els.priority.addEventListener("change", render);
-els.demo.addEventListener("click", () => { loadDemoPmids(); render(); });
+[els.query, els.maxDays, els.minArticles].forEach(el => el.addEventListener("input", rerenderWithUrl));
+[els.field, els.indexSource, els.abdcRating, els.timelineStatus, els.sortBy].forEach(el => el.addEventListener("change", rerenderWithUrl));
+els.share.addEventListener("click", copyShareLink);
+els.exportCsv.addEventListener("click", exportCurrentCsv);
 els.clear.addEventListener("click", () => {
   els.query.value = "";
   els.field.value = "all";
   els.indexSource.value = "all";
   els.abdcRating.value = "all";
-  els.priority.value = "total";
-  els.pmids.value = "";
-  render();
+  els.timelineStatus.value = "all";
+  els.sortBy.value = "fastest-total";
+  els.maxDays.value = "";
+  els.minArticles.value = "";
+  rerenderWithUrl();
 });
 
-render();
+applyUrl();
 loadRegistry();
 </script>
 </body>
