@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Journal Timelines</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --ink: #17202a;
+    --muted: #657080;
+    --line: #dce1e8;
+    --blue: #2563eb;
+    --green: #11845b;
+    --amber: #b7791f;
+    --red: #c2410c;
+    --chip: #eef2f7;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    font-size: 14px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+
+  .mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: var(--blue);
+    color: white;
+    font-weight: 800;
+  }
+
+  h1 { margin: 0; font-size: 18px; line-height: 1.2; }
+  .sub { margin-top: 3px; color: var(--muted); font-size: 12px; }
+
+  main {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    min-height: calc(100vh - 75px);
+  }
+
+  aside {
+    border-right: 1px solid var(--line);
+    background: #fbfcfe;
+    padding: 18px;
+  }
+
+  .workspace { padding: 22px 24px 34px; }
+
+  label {
+    display: block;
+    margin: 0 0 7px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+    color: var(--ink);
+    font: inherit;
+    padding: 10px 11px;
+    outline: none;
+  }
+
+  textarea { min-height: 118px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
+
+  .field { margin-bottom: 16px; }
+
+  .button {
+    width: 100%;
+    border: 0;
+    border-radius: 8px;
+    background: var(--blue);
+    color: white;
+    font-weight: 700;
+    padding: 11px 12px;
+    cursor: pointer;
+  }
+
+  .button.secondary {
+    margin-top: 9px;
+    background: #e8edf5;
+    color: var(--ink);
+  }
+
+  .notice {
+    margin-top: 18px;
+    padding: 12px;
+    border: 1px solid #f0d99b;
+    border-radius: 8px;
+    background: #fff8e6;
+    color: #6d4b0f;
+    line-height: 1.45;
+    font-size: 12px;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .stat, .panel {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+  }
+
+  .stat { padding: 15px; }
+  .stat .value { font-size: 26px; font-weight: 800; margin-top: 6px; }
+  .stat .caption { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+  .panel { overflow: hidden; }
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .panel-title { font-weight: 800; }
+  .chips { display: flex; gap: 7px; flex-wrap: wrap; }
+  .chip {
+    border-radius: 999px;
+    background: var(--chip);
+    color: #465365;
+    padding: 5px 9px;
+    font-size: 12px;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td {
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    background: #fbfcfe;
+  }
+  tr:last-child td { border-bottom: 0; }
+
+  .journal { font-weight: 800; }
+  .publisher { color: var(--muted); margin-top: 3px; font-size: 12px; }
+  .score { display: inline-flex; align-items: center; justify-content: center; min-width: 56px; border-radius: 999px; padding: 4px 9px; font-weight: 800; }
+  .score.fast { background: #e7f7ef; color: var(--green); }
+  .score.medium { background: #fff3d6; color: var(--amber); }
+  .score.slow { background: #ffe9df; color: var(--red); }
+
+  .bar {
+    height: 9px;
+    border-radius: 999px;
+    background: #e7ebf0;
+    overflow: hidden;
+    min-width: 130px;
+  }
+  .bar > span { display: block; height: 100%; background: var(--blue); border-radius: inherit; }
+  .small { color: var(--muted); font-size: 12px; margin-top: 6px; }
+
+  .empty {
+    padding: 30px 16px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    aside { border-right: 0; border-bottom: 1px solid var(--line); }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    table { min-width: 760px; }
+    .table-wrap { overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="mark">JT</div>
+    <div>
+      <h1>Journal Timelines</h1>
+      <div class="sub">Estimate journal publication speed from deposited article lifecycle dates.</div>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <div class="field">
+        <label for="query">Search journals</label>
+        <input id="query" placeholder="e.g. public health, PLOS, Lancet" />
+      </div>
+
+      <div class="field">
+        <label for="field">Field</label>
+        <select id="field">
+          <option value="all">All fields</option>
+          <option value="public health">Public health</option>
+          <option value="medicine">Medicine</option>
+          <option value="psychology">Psychology</option>
+          <option value="social science">Social science</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="priority">Optimize for</label>
+        <select id="priority">
+          <option value="total">Submission to publication</option>
+          <option value="acceptance">Submission to acceptance</option>
+          <option value="production">Acceptance to publication</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="pmids">PMIDs to import</label>
+        <textarea id="pmids" placeholder="Paste PMIDs, one per line or comma separated"></textarea>
+      </div>
+
+      <button class="button" id="demo">Load demo dataset</button>
+      <button class="button secondary" id="clear">Clear filters</button>
+
+      <div class="notice">
+        Reliable estimates require article records with received, accepted, and publish dates. Many publishers do not deposit all three.
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <div class="stats">
+        <div class="stat">
+          <label>Journals</label>
+          <div class="value" id="stat-journals">0</div>
+          <div class="caption">with usable timing data</div>
+        </div>
+        <div class="stat">
+          <label>Median Total</label>
+          <div class="value" id="stat-total">--</div>
+          <div class="caption">submission to publication</div>
+        </div>
+        <div class="stat">
+          <label>Fastest</label>
+          <div class="value" id="stat-fastest">--</div>
+          <div class="caption">best median total lag</div>
+        </div>
+        <div class="stat">
+          <label>Coverage</label>
+          <div class="value" id="stat-coverage">--</div>
+          <div class="caption">records with full dates</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Journal Speed Table</div>
+            <div class="small">Sorted by the selected timeline metric.</div>
+          </div>
+          <div class="chips">
+            <span class="chip">PubMed-ready</span>
+            <span class="chip">Median days</span>
+            <span class="chip">Coverage-aware</span>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Journal</th>
+                <th>Decision</th>
+                <th>Production</th>
+                <th>Total</th>
+                <th>Evidence</th>
+                <th>Fit</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+<script>
+const journals = [
+  {
+    journal: "PLOS ONE",
+    publisher: "Public Library of Science",
+    field: "medicine",
+    issn: "1932-6203",
+    articles: 128,
+    coverage: 0.78,
+    submissionToAcceptance: 112,
+    acceptanceToPublication: 29,
+    submissionToPublication: 143,
+  },
+  {
+    journal: "BMJ Open",
+    publisher: "BMJ",
+    field: "public health",
+    issn: "2044-6055",
+    articles: 84,
+    coverage: 0.64,
+    submissionToAcceptance: 135,
+    acceptanceToPublication: 37,
+    submissionToPublication: 174,
+  },
+  {
+    journal: "Frontiers in Psychology",
+    publisher: "Frontiers",
+    field: "psychology",
+    issn: "1664-1078",
+    articles: 72,
+    coverage: 0.71,
+    submissionToAcceptance: 96,
+    acceptanceToPublication: 22,
+    submissionToPublication: 121,
+  },
+  {
+    journal: "BMC Public Health",
+    publisher: "Springer Nature",
+    field: "public health",
+    issn: "1471-2458",
+    articles: 66,
+    coverage: 0.58,
+    submissionToAcceptance: 151,
+    acceptanceToPublication: 33,
+    submissionToPublication: 187,
+  },
+  {
+    journal: "Social Science & Medicine",
+    publisher: "Elsevier",
+    field: "social science",
+    issn: "0277-9536",
+    articles: 34,
+    coverage: 0.29,
+    submissionToAcceptance: 170,
+    acceptanceToPublication: 44,
+    submissionToPublication: 219,
+  },
+  {
+    journal: "Journal of Medical Internet Research",
+    publisher: "JMIR Publications",
+    field: "medicine",
+    issn: "1438-8871",
+    articles: 49,
+    coverage: 0.61,
+    submissionToAcceptance: 88,
+    acceptanceToPublication: 31,
+    submissionToPublication: 123,
+  },
+];
+
+const metricMap = {
+  total: "submissionToPublication",
+  acceptance: "submissionToAcceptance",
+  production: "acceptanceToPublication",
+};
+
+const els = {
+  query: document.getElementById("query"),
+  field: document.getElementById("field"),
+  priority: document.getElementById("priority"),
+  pmids: document.getElementById("pmids"),
+  rows: document.getElementById("rows"),
+  statJournals: document.getElementById("stat-journals"),
+  statTotal: document.getElementById("stat-total"),
+  statFastest: document.getElementById("stat-fastest"),
+  statCoverage: document.getElementById("stat-coverage"),
+  demo: document.getElementById("demo"),
+  clear: document.getElementById("clear"),
+};
+
+function median(values) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+}
+
+function scoreClass(days) {
+  if (days <= 130) return "fast";
+  if (days <= 185) return "medium";
+  return "slow";
+}
+
+function fitLabel(item) {
+  if (item.coverage < 0.35) return "Low confidence";
+  if (item.submissionToPublication <= 130) return "Fast path";
+  if (item.acceptanceToPublication <= 30) return "Quick production";
+  return "Standard";
+}
+
+function filteredData() {
+  const q = els.query.value.trim().toLowerCase();
+  const field = els.field.value;
+  const metric = metricMap[els.priority.value];
+  return journals
+    .filter(item => field === "all" || item.field === field)
+    .filter(item => {
+      const haystack = `${item.journal} ${item.publisher} ${item.field} ${item.issn}`.toLowerCase();
+      return !q || haystack.includes(q);
+    })
+    .sort((a, b) => a[metric] - b[metric]);
+}
+
+function render() {
+  const data = filteredData();
+  const maxTotal = Math.max(...journals.map(item => item.submissionToPublication));
+
+  els.statJournals.textContent = data.length;
+  els.statTotal.textContent = data.length ? `${median(data.map(item => item.submissionToPublication))}d` : "--";
+  els.statFastest.textContent = data.length ? `${data[0].submissionToPublication}d` : "--";
+  els.statCoverage.textContent = data.length ? `${Math.round(median(data.map(item => item.coverage * 100)))}%` : "--";
+
+  if (!data.length) {
+    els.rows.innerHTML = `<tr><td colspan="6"><div class="empty">No journals match the current filters.</div></td></tr>`;
+    return;
+  }
+
+  els.rows.innerHTML = data.map(item => {
+    const width = Math.max(8, Math.round((item.submissionToPublication / maxTotal) * 100));
+    const klass = scoreClass(item.submissionToPublication);
+    return `
+      <tr>
+        <td>
+          <div class="journal">${item.journal}</div>
+          <div class="publisher">${item.publisher} · ISSN ${item.issn}</div>
+        </td>
+        <td><span class="score ${scoreClass(item.submissionToAcceptance)}">${item.submissionToAcceptance}d</span></td>
+        <td><span class="score ${scoreClass(item.acceptanceToPublication)}">${item.acceptanceToPublication}d</span></td>
+        <td>
+          <span class="score ${klass}">${item.submissionToPublication}d</span>
+          <div class="bar" aria-hidden="true"><span style="width:${width}%"></span></div>
+        </td>
+        <td>${item.articles} articles<div class="small">${Math.round(item.coverage * 100)}% full-date coverage</div></td>
+        <td>${fitLabel(item)}<div class="small">${item.field}</div></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function loadDemoPmids() {
+  els.pmids.value = "38912345\n38899110\n38870021\n38765432";
+}
+
+els.query.addEventListener("input", render);
+els.field.addEventListener("change", render);
+els.priority.addEventListener("change", render);
+els.demo.addEventListener("click", () => { loadDemoPmids(); render(); });
+els.clear.addEventListener("click", () => {
+  els.query.value = "";
+  els.field.value = "all";
+  els.priority.value = "total";
+  els.pmids.value = "";
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
