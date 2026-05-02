@@ -7,6 +7,7 @@ exports may arrive as Excel files that can be converted outside the app.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import sys
@@ -70,11 +71,46 @@ def normalize(paths: list[Path]) -> list[dict]:
     return sorted(journals.values(), key=lambda item: (item.get("journal") or "").lower())
 
 
+def compact_row(row: dict) -> dict:
+    defaults = {
+        "wos": False,
+        "wosIndexes": [],
+        "abdcRating": None,
+        "articles": 0,
+        "coverage": 0,
+        "submissionToAcceptance": None,
+        "acceptanceToPublication": None,
+        "submissionToPublication": None,
+        "sources": [],
+    }
+    return {
+        key: value
+        for key, value in row.items()
+        if value not in ("", None) and defaults.get(key, object()) != value
+    }
+
+
 def main() -> None:
-    paths = [Path(arg) for arg in sys.argv[1:]]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("paths", nargs="+", type=Path)
+    parser.add_argument("-o", "--output", type=Path)
+    parser.add_argument("--pretty", action="store_true")
+    args = parser.parse_args()
+
+    paths = args.paths
     if not paths:
         raise SystemExit("Usage: python scripts/normalize_journals.py data/list.csv [data/list2.csv]")
-    print(json.dumps(normalize(paths), indent=2))
+    rows = normalize(paths)
+    if args.pretty:
+        content = json.dumps(rows, indent=2)
+    else:
+        content = json.dumps([compact_row(row) for row in rows], separators=(",", ":"))
+
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(content, encoding="utf-8")
+    else:
+        print(content)
 
 
 if __name__ == "__main__":

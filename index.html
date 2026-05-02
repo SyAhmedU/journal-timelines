@@ -351,7 +351,7 @@
   </main>
 
 <script>
-const journals = [
+const fallbackJournals = [
   {
     journal: "PLOS ONE",
     publisher: "Public Library of Science",
@@ -610,6 +610,10 @@ const journals = [
   },
 ];
 
+let journals = fallbackJournals;
+let registryLoaded = false;
+const RENDER_LIMIT = 300;
+
 const metricMap = {
   total: "submissionToPublication",
   acceptance: "submissionToAcceptance",
@@ -656,6 +660,7 @@ function fitLabel(item) {
 
 function filteredData() {
   const q = els.query.value.trim().toLowerCase();
+  const qLoose = q.replace(/[^a-z0-9]+/g, "");
   const field = els.field.value;
   const indexSource = els.indexSource.value;
   const abdcRating = els.abdcRating.value;
@@ -678,7 +683,8 @@ function filteredData() {
     })
     .filter(item => {
       const haystack = `${item.journal} ${item.publisher} ${item.field} ${item.issn} ${item.eissn || ""} ${item.abdcRating || ""} ${(item.wosIndexes || []).join(" ")}`.toLowerCase();
-      return !q || haystack.includes(q);
+      const looseHaystack = haystack.replace(/[^a-z0-9]+/g, "");
+      return !q || haystack.includes(q) || looseHaystack.includes(qLoose);
     })
     .sort((a, b) => {
       const av = a[metric] ?? Number.POSITIVE_INFINITY;
@@ -689,7 +695,7 @@ function filteredData() {
 
 function render() {
   const data = filteredData();
-  const timedData = data.filter(item => item.submissionToPublication !== null);
+  const timedData = data.filter(item => item.submissionToPublication != null);
   const maxTotal = Math.max(...journals.map(item => item.submissionToPublication || 0), 1);
 
   els.statJournals.textContent = data.length;
@@ -702,8 +708,13 @@ function render() {
     return;
   }
 
-  els.rows.innerHTML = data.map(item => {
-    const hasTimeline = item.submissionToPublication !== null;
+  const visible = data.slice(0, RENDER_LIMIT);
+  const noticeRow = data.length > visible.length
+    ? `<tr><td colspan="6"><div class="empty">Showing first ${visible.length.toLocaleString()} of ${data.length.toLocaleString()} matching journals. Search or filter to narrow the registry.</div></td></tr>`
+    : "";
+
+  els.rows.innerHTML = noticeRow + visible.map(item => {
+    const hasTimeline = item.submissionToPublication != null;
     const width = hasTimeline ? Math.max(8, Math.round((item.submissionToPublication / maxTotal) * 100)) : 0;
     const klass = scoreClass(item.submissionToPublication);
     const indexes = [
@@ -723,8 +734,8 @@ function render() {
           <span class="score ${klass}">${hasTimeline ? `${item.submissionToPublication}d` : "Unknown"}</span>
           ${hasTimeline ? `<div class="bar" aria-hidden="true"><span style="width:${width}%"></span></div>` : `<div class="small">No full-date sample yet</div>`}
         </td>
-        <td>${item.articles} articles<div class="small">${Math.round(item.coverage * 100)}% full-date coverage</div></td>
-        <td>${fitLabel(item)}<div class="small">${item.field}</div></td>
+        <td>${item.articles || 0} articles<div class="small">${Math.round((item.coverage || 0) * 100)}% full-date coverage</div></td>
+        <td>${fitLabel(item)}<div class="small">${item.field || "unknown"}</div></td>
       </tr>
     `;
   }).join("");
@@ -732,6 +743,21 @@ function render() {
 
 function loadDemoPmids() {
   els.pmids.value = "38912345\n38899110\n38870021\n38765432";
+}
+
+async function loadRegistry() {
+  try {
+    const response = await fetch("data/journals.json", { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (Array.isArray(data) && data.length) {
+      journals = data;
+      registryLoaded = true;
+      render();
+    }
+  } catch (error) {
+    registryLoaded = false;
+  }
 }
 
 els.query.addEventListener("input", render);
@@ -751,6 +777,7 @@ els.clear.addEventListener("click", () => {
 });
 
 render();
+loadRegistry();
 </script>
 </body>
 </html>

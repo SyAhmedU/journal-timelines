@@ -1,0 +1,29 @@
+{
+  "registry": [
+    {
+      "source": "Scopus Source title list",
+      "provider": "Elsevier",
+      "file": "ext_list_Mar_2026.xlsx",
+      "retrieved": "2026-05-03",
+      "url": "https://downloads.ctfassets.net/o78em1y1w4i4/7xtaTxNiNcWRTeZkV86eNy/d232405141a2654fdc6dab977f047a6a/ext_list_Mar_2026.xlsx",
+      "rowsConverted": 45846,
+      "localDerivedFiles": [
+        "data/scopus_registry.csv",
+        "data/journals.json"
+      ]
+    }
+  ],
+  "pending": [
+    {
+      "source": "Web of Science Master Journal List collection downloads",
+      "provider": "Clarivate",
+      "reason": "Download files require a free Master Journal List login.",
+      "url": "https://mjl.clarivate.com/collection-list-downloads"
+    },
+    {
+      "source": "Timeline evidence",
+      "provider": "PubMed, Crossref, publisher article pages where permitted",
+      "reason": "Index lists do not contain submission, acceptance, and publication lifecycle dates."
+    }
+  ]
+}
