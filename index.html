@@ -53,7 +53,7 @@
 
   main {
     display: grid;
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: 310px 1fr;
     min-height: calc(100vh - 75px);
   }
 
@@ -88,7 +88,6 @@
 
   textarea { min-height: 118px; resize: vertical; }
   input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
-
   .field { margin-bottom: 16px; }
 
   .button {
@@ -148,12 +147,16 @@
 
   .panel-title { font-weight: 800; }
   .chips { display: flex; gap: 7px; flex-wrap: wrap; }
-  .chip {
+  .chip, .badge {
     border-radius: 999px;
     background: var(--chip);
     color: #465365;
     padding: 5px 9px;
     font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0 4px 4px 0;
   }
 
   table { width: 100%; border-collapse: collapse; }
@@ -174,7 +177,15 @@
 
   .journal { font-weight: 800; }
   .publisher { color: var(--muted); margin-top: 3px; font-size: 12px; }
-  .score { display: inline-flex; align-items: center; justify-content: center; min-width: 56px; border-radius: 999px; padding: 4px 9px; font-weight: 800; }
+  .score {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-weight: 800;
+  }
   .score.fast { background: #e7f7ef; color: var(--green); }
   .score.medium { background: #fff3d6; color: var(--amber); }
   .score.slow { background: #ffe9df; color: var(--red); }
@@ -185,6 +196,7 @@
     background: #e7ebf0;
     overflow: hidden;
     min-width: 130px;
+    margin-top: 8px;
   }
   .bar > span { display: block; height: 100%; background: var(--blue); border-radius: inherit; }
   .small { color: var(--muted); font-size: 12px; margin-top: 6px; }
@@ -199,7 +211,7 @@
     main { grid-template-columns: 1fr; }
     aside { border-right: 0; border-bottom: 1px solid var(--line); }
     .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    table { min-width: 760px; }
+    table { min-width: 860px; }
     .table-wrap { overflow-x: auto; }
   }
 </style>
@@ -209,7 +221,7 @@
     <div class="mark">JT</div>
     <div>
       <h1>Journal Timelines</h1>
-      <div class="sub">Estimate journal publication speed from deposited article lifecycle dates.</div>
+      <div class="sub">Compare indexed journals and estimate publication speed where lifecycle dates exist.</div>
     </div>
   </header>
 
@@ -217,17 +229,46 @@
     <aside>
       <div class="field">
         <label for="query">Search journals</label>
-        <input id="query" placeholder="e.g. public health, PLOS, Lancet" />
+        <input id="query" placeholder="e.g. marketing, MIS Quarterly, 0022" />
       </div>
 
       <div class="field">
         <label for="field">Field</label>
         <select id="field">
           <option value="all">All fields</option>
+          <option value="business">Business</option>
+          <option value="economics">Economics</option>
+          <option value="finance">Finance</option>
+          <option value="information systems">Information systems</option>
+          <option value="management">Management</option>
+          <option value="marketing">Marketing</option>
           <option value="public health">Public health</option>
           <option value="medicine">Medicine</option>
           <option value="psychology">Psychology</option>
           <option value="social science">Social science</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="indexSource">Indexed in</label>
+        <select id="indexSource">
+          <option value="all">Any source</option>
+          <option value="scopus">Scopus</option>
+          <option value="wos">Web of Science</option>
+          <option value="abdc">ABDC</option>
+          <option value="all-three">Scopus + WoS + ABDC</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="abdcRating">ABDC rating</label>
+        <select id="abdcRating">
+          <option value="all">Any rating</option>
+          <option value="A*">A*</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+          <option value="none">Not ABDC-listed</option>
         </select>
       </div>
 
@@ -245,11 +286,11 @@
         <textarea id="pmids" placeholder="Paste PMIDs, one per line or comma separated"></textarea>
       </div>
 
-      <button class="button" id="demo">Load demo dataset</button>
+      <button class="button" id="demo">Load demo PMID list</button>
       <button class="button secondary" id="clear">Clear filters</button>
 
       <div class="notice">
-        Reliable estimates require article records with received, accepted, and publish dates. Many publishers do not deposit all three.
+        Scopus, Web of Science, and ABDC membership identify journals. Timeline estimates require article records with received, accepted, and publication dates.
       </div>
     </aside>
 
@@ -258,17 +299,17 @@
         <div class="stat">
           <label>Journals</label>
           <div class="value" id="stat-journals">0</div>
-          <div class="caption">with usable timing data</div>
+          <div class="caption">matching registry filters</div>
         </div>
         <div class="stat">
           <label>Median Total</label>
           <div class="value" id="stat-total">--</div>
-          <div class="caption">submission to publication</div>
+          <div class="caption">known submission to publication</div>
         </div>
         <div class="stat">
           <label>Fastest</label>
           <div class="value" id="stat-fastest">--</div>
-          <div class="caption">best median total lag</div>
+          <div class="caption">best known median total lag</div>
         </div>
         <div class="stat">
           <label>Coverage</label>
@@ -280,13 +321,14 @@
       <div class="panel">
         <div class="panel-head">
           <div>
-            <div class="panel-title">Journal Speed Table</div>
-            <div class="small">Sorted by the selected timeline metric.</div>
+            <div class="panel-title">Journal Registry</div>
+            <div class="small">Indexed-journal list with timing evidence where available.</div>
           </div>
           <div class="chips">
-            <span class="chip">PubMed-ready</span>
+            <span class="chip">Scopus</span>
+            <span class="chip">Web of Science</span>
+            <span class="chip">ABDC</span>
             <span class="chip">Median days</span>
-            <span class="chip">Coverage-aware</span>
           </div>
         </div>
         <div class="table-wrap">
@@ -294,8 +336,8 @@
             <thead>
               <tr>
                 <th>Journal</th>
-                <th>Decision</th>
-                <th>Production</th>
+                <th>Indexes</th>
+                <th>ABDC</th>
                 <th>Total</th>
                 <th>Evidence</th>
                 <th>Fit</th>
@@ -315,6 +357,11 @@ const journals = [
     publisher: "Public Library of Science",
     field: "medicine",
     issn: "1932-6203",
+    eissn: "1932-6203",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SCIE"],
+    abdcRating: null,
     articles: 128,
     coverage: 0.78,
     submissionToAcceptance: 112,
@@ -326,6 +373,11 @@ const journals = [
     publisher: "BMJ",
     field: "public health",
     issn: "2044-6055",
+    eissn: "2044-6055",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SCIE"],
+    abdcRating: null,
     articles: 84,
     coverage: 0.64,
     submissionToAcceptance: 135,
@@ -337,6 +389,11 @@ const journals = [
     publisher: "Frontiers",
     field: "psychology",
     issn: "1664-1078",
+    eissn: "1664-1078",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SSCI", "SCIE"],
+    abdcRating: null,
     articles: 72,
     coverage: 0.71,
     submissionToAcceptance: 96,
@@ -348,6 +405,11 @@ const journals = [
     publisher: "Springer Nature",
     field: "public health",
     issn: "1471-2458",
+    eissn: "1471-2458",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SCIE", "SSCI"],
+    abdcRating: null,
     articles: 66,
     coverage: 0.58,
     submissionToAcceptance: 151,
@@ -359,6 +421,11 @@ const journals = [
     publisher: "Elsevier",
     field: "social science",
     issn: "0277-9536",
+    eissn: "1873-5347",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SSCI"],
+    abdcRating: "A*",
     articles: 34,
     coverage: 0.29,
     submissionToAcceptance: 170,
@@ -370,11 +437,176 @@ const journals = [
     publisher: "JMIR Publications",
     field: "medicine",
     issn: "1438-8871",
+    eissn: "1438-8871",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SCIE"],
+    abdcRating: null,
     articles: 49,
     coverage: 0.61,
     submissionToAcceptance: 88,
     acceptanceToPublication: 31,
     submissionToPublication: 123,
+  },
+  {
+    journal: "Academy of Management Journal",
+    publisher: "Academy of Management",
+    field: "management",
+    issn: "0001-4273",
+    eissn: "1948-0989",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SSCI"],
+    abdcRating: "A*",
+    articles: 0,
+    coverage: 0,
+    submissionToAcceptance: null,
+    acceptanceToPublication: null,
+    submissionToPublication: null,
+  },
+  {
+    journal: "Academy of Management Review",
+    publisher: "Academy of Management",
+    field: "management",
+    issn: "0363-7425",
+    eissn: "1930-3807",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SSCI"],
+    abdcRating: "A*",
+    articles: 0,
+    coverage: 0,
+    submissionToAcceptance: null,
+    acceptanceToPublication: null,
+    submissionToPublication: null,
+  },
+  {
+    journal: "Journal of Marketing",
+    publisher: "SAGE Publications",
+    field: "marketing",
+    issn: "0022-2429",
+    eissn: "1547-7185",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SSCI"],
+    abdcRating: "A*",
+    articles: 0,
+    coverage: 0,
+    submissionToAcceptance: null,
+    acceptanceToPublication: null,
+    submissionToPublication: null,
+  },
+  {
+    journal: "Journal of Consumer Research",
+    publisher: "Oxford University Press",
+    field: "marketing",
+    issn: "0093-5301",
+    eissn: "1537-5277",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SSCI"],
+    abdcRating: "A*",
+    articles: 0,
+    coverage: 0,
+    submissionToAcceptance: null,
+    acceptanceToPublication: null,
+    submissionToPublication: null,
+  },
+  {
+    journal: "Information Systems Research",
+    publisher: "INFORMS",
+    field: "information systems",
+    issn: "1047-7047",
+    eissn: "1526-5536",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SSCI", "SCIE"],
+    abdcRating: "A*",
+    articles: 0,
+    coverage: 0,
+    submissionToAcceptance: null,
+    acceptanceToPublication: null,
+    submissionToPublication: null,
+  },
+  {
+    journal: "MIS Quarterly",
+    publisher: "Management Information Systems Research Center",
+    field: "information systems",
+    issn: "0276-7783",
+    eissn: "2162-9730",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SSCI"],
+    abdcRating: "A*",
+    articles: 0,
+    coverage: 0,
+    submissionToAcceptance: null,
+    acceptanceToPublication: null,
+    submissionToPublication: null,
+  },
+  {
+    journal: "Journal of Finance",
+    publisher: "Wiley",
+    field: "finance",
+    issn: "0022-1082",
+    eissn: "1540-6261",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SSCI"],
+    abdcRating: "A*",
+    articles: 0,
+    coverage: 0,
+    submissionToAcceptance: null,
+    acceptanceToPublication: null,
+    submissionToPublication: null,
+  },
+  {
+    journal: "American Economic Review",
+    publisher: "American Economic Association",
+    field: "economics",
+    issn: "0002-8282",
+    eissn: "1944-7981",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SSCI"],
+    abdcRating: "A*",
+    articles: 0,
+    coverage: 0,
+    submissionToAcceptance: null,
+    acceptanceToPublication: null,
+    submissionToPublication: null,
+  },
+  {
+    journal: "Accounting, Organizations and Society",
+    publisher: "Elsevier",
+    field: "business",
+    issn: "0361-3682",
+    eissn: "1873-6289",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["SSCI"],
+    abdcRating: "A*",
+    articles: 0,
+    coverage: 0,
+    submissionToAcceptance: null,
+    acceptanceToPublication: null,
+    submissionToPublication: null,
+  },
+  {
+    journal: "Australasian Marketing Journal",
+    publisher: "SAGE Publications",
+    field: "marketing",
+    issn: "1441-3582",
+    eissn: "1839-3349",
+    scopus: true,
+    wos: true,
+    wosIndexes: ["ESCI"],
+    abdcRating: "A",
+    articles: 0,
+    coverage: 0,
+    submissionToAcceptance: null,
+    acceptanceToPublication: null,
+    submissionToPublication: null,
   },
 ];
 
@@ -387,6 +619,8 @@ const metricMap = {
 const els = {
   query: document.getElementById("query"),
   field: document.getElementById("field"),
+  indexSource: document.getElementById("indexSource"),
+  abdcRating: document.getElementById("abdcRating"),
   priority: document.getElementById("priority"),
   pmids: document.getElementById("pmids"),
   rows: document.getElementById("rows"),
@@ -406,12 +640,14 @@ function median(values) {
 }
 
 function scoreClass(days) {
+  if (days === null || days === undefined) return "medium";
   if (days <= 130) return "fast";
   if (days <= 185) return "medium";
   return "slow";
 }
 
 function fitLabel(item) {
+  if (item.submissionToPublication === null) return "Needs timeline evidence";
   if (item.coverage < 0.35) return "Low confidence";
   if (item.submissionToPublication <= 130) return "Fast path";
   if (item.acceptanceToPublication <= 30) return "Quick production";
@@ -421,23 +657,44 @@ function fitLabel(item) {
 function filteredData() {
   const q = els.query.value.trim().toLowerCase();
   const field = els.field.value;
+  const indexSource = els.indexSource.value;
+  const abdcRating = els.abdcRating.value;
   const metric = metricMap[els.priority.value];
+
   return journals
     .filter(item => field === "all" || item.field === field)
     .filter(item => {
-      const haystack = `${item.journal} ${item.publisher} ${item.field} ${item.issn}`.toLowerCase();
+      if (indexSource === "all") return true;
+      if (indexSource === "scopus") return item.scopus;
+      if (indexSource === "wos") return item.wos;
+      if (indexSource === "abdc") return Boolean(item.abdcRating);
+      if (indexSource === "all-three") return item.scopus && item.wos && Boolean(item.abdcRating);
+      return true;
+    })
+    .filter(item => {
+      if (abdcRating === "all") return true;
+      if (abdcRating === "none") return !item.abdcRating;
+      return item.abdcRating === abdcRating;
+    })
+    .filter(item => {
+      const haystack = `${item.journal} ${item.publisher} ${item.field} ${item.issn} ${item.eissn || ""} ${item.abdcRating || ""} ${(item.wosIndexes || []).join(" ")}`.toLowerCase();
       return !q || haystack.includes(q);
     })
-    .sort((a, b) => a[metric] - b[metric]);
+    .sort((a, b) => {
+      const av = a[metric] ?? Number.POSITIVE_INFINITY;
+      const bv = b[metric] ?? Number.POSITIVE_INFINITY;
+      return av - bv || a.journal.localeCompare(b.journal);
+    });
 }
 
 function render() {
   const data = filteredData();
-  const maxTotal = Math.max(...journals.map(item => item.submissionToPublication));
+  const timedData = data.filter(item => item.submissionToPublication !== null);
+  const maxTotal = Math.max(...journals.map(item => item.submissionToPublication || 0), 1);
 
   els.statJournals.textContent = data.length;
-  els.statTotal.textContent = data.length ? `${median(data.map(item => item.submissionToPublication))}d` : "--";
-  els.statFastest.textContent = data.length ? `${data[0].submissionToPublication}d` : "--";
+  els.statTotal.textContent = timedData.length ? `${median(timedData.map(item => item.submissionToPublication))}d` : "--";
+  els.statFastest.textContent = timedData.length ? `${timedData[0].submissionToPublication}d` : "--";
   els.statCoverage.textContent = data.length ? `${Math.round(median(data.map(item => item.coverage * 100)))}%` : "--";
 
   if (!data.length) {
@@ -446,19 +703,25 @@ function render() {
   }
 
   els.rows.innerHTML = data.map(item => {
-    const width = Math.max(8, Math.round((item.submissionToPublication / maxTotal) * 100));
+    const hasTimeline = item.submissionToPublication !== null;
+    const width = hasTimeline ? Math.max(8, Math.round((item.submissionToPublication / maxTotal) * 100)) : 0;
     const klass = scoreClass(item.submissionToPublication);
+    const indexes = [
+      item.scopus ? "Scopus" : null,
+      item.wos ? `WoS ${item.wosIndexes?.join("/") || ""}`.trim() : null,
+    ].filter(Boolean);
+
     return `
       <tr>
         <td>
           <div class="journal">${item.journal}</div>
-          <div class="publisher">${item.publisher} · ISSN ${item.issn}</div>
+          <div class="publisher">${item.publisher} · ISSN ${item.issn}${item.eissn ? ` · eISSN ${item.eissn}` : ""}</div>
         </td>
-        <td><span class="score ${scoreClass(item.submissionToAcceptance)}">${item.submissionToAcceptance}d</span></td>
-        <td><span class="score ${scoreClass(item.acceptanceToPublication)}">${item.acceptanceToPublication}d</span></td>
+        <td>${indexes.length ? indexes.map(label => `<span class="badge">${label}</span>`).join("") : "Unverified"}</td>
+        <td><span class="score ${item.abdcRating ? "fast" : "medium"}">${item.abdcRating || "Not listed"}</span></td>
         <td>
-          <span class="score ${klass}">${item.submissionToPublication}d</span>
-          <div class="bar" aria-hidden="true"><span style="width:${width}%"></span></div>
+          <span class="score ${klass}">${hasTimeline ? `${item.submissionToPublication}d` : "Unknown"}</span>
+          ${hasTimeline ? `<div class="bar" aria-hidden="true"><span style="width:${width}%"></span></div>` : `<div class="small">No full-date sample yet</div>`}
         </td>
         <td>${item.articles} articles<div class="small">${Math.round(item.coverage * 100)}% full-date coverage</div></td>
         <td>${fitLabel(item)}<div class="small">${item.field}</div></td>
@@ -473,11 +736,15 @@ function loadDemoPmids() {
 
 els.query.addEventListener("input", render);
 els.field.addEventListener("change", render);
+els.indexSource.addEventListener("change", render);
+els.abdcRating.addEventListener("change", render);
 els.priority.addEventListener("change", render);
 els.demo.addEventListener("click", () => { loadDemoPmids(); render(); });
 els.clear.addEventListener("click", () => {
   els.query.value = "";
   els.field.value = "all";
+  els.indexSource.value = "all";
+  els.abdcRating.value = "all";
   els.priority.value = "total";
   els.pmids.value = "";
   render();
