@@ -13,12 +13,16 @@
       ]
     },
     {
-      "source": "Seed timeline evidence",
-      "provider": "Project-maintained CSV",
-      "file": "data/timelines_seed.csv",
+      "source": "PubMed article-level lifecycle evidence",
+      "provider": "NCBI PubMed E-utilities",
+      "file": "data/article_evidence_pubmed_sample.csv",
       "retrieved": "2026-05-03",
-      "rowsConverted": 6,
-      "note": "Temporary seed timeline aggregates used to test ranking and filters. Replace with harvested article-level evidence."
+      "articleRows": 315,
+      "journalAggregates": 4,
+      "derivedFiles": [
+        "data/timelines_pubmed_sample.csv",
+        "data/journals.json"
+      ]
     }
   ],
   "pending": [
@@ -29,9 +33,9 @@
       "url": "https://mjl.clarivate.com/collection-list-downloads"
     },
     {
-      "source": "Timeline evidence",
-      "provider": "PubMed, Crossref, publisher article pages where permitted",
-      "reason": "Index lists do not contain submission, acceptance, and publication lifecycle dates."
+      "source": "Expanded non-biomedical timeline evidence",
+      "provider": "Crossref, publisher article pages where permitted, and future user-submitted evidence",
+      "reason": "Many non-biomedical journals do not expose received/accepted dates through PubMed."
     }
   ]
 }

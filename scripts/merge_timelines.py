@@ -37,6 +37,9 @@ def load_timelines(path: Path) -> dict[str, dict]:
                 "submissionToAcceptance": number(row.get("submission_to_acceptance")),
                 "acceptanceToPublication": number(row.get("acceptance_to_publication")),
                 "submissionToPublication": number(row.get("submission_to_publication")),
+                "totalP25": number(row.get("total_p25")),
+                "totalP75": number(row.get("total_p75")),
+                "timelineConfidence": row.get("confidence") or "",
                 "timelineSource": row.get("source") or "unknown",
                 "timelineNote": row.get("note") or "",
             }

@@ -467,6 +467,7 @@ function fieldMatches(item, selected) {
 }
 
 function confidenceLabel(item) {
+  if (item.timelineConfidence) return `${item.timelineConfidence[0].toUpperCase()}${item.timelineConfidence.slice(1)} confidence`;
   const articles = item.articles || 0;
   const coverage = item.coverage || 0;
   if (!hasTimeline(item)) return "No timeline";
@@ -577,7 +578,7 @@ function render() {
         <td><span class="score ${item.abdcRating ? "fast" : "medium"}">${item.abdcRating || "Not listed"}</span></td>
         <td>
           <span class="score ${scoreClass(item.submissionToPublication)}">${known ? `${item.submissionToPublication}d` : "Unknown"}</span>
-          ${known ? `<div class="small">${item.submissionToAcceptance ?? "--"}d review · ${item.acceptanceToPublication ?? "--"}d production</div><div class="bar" aria-hidden="true"><span style="width:${width}%"></span></div>` : `<div class="small">No full-date sample yet</div>`}
+          ${known ? `<div class="small">${item.submissionToAcceptance ?? "--"}d review · ${item.acceptanceToPublication ?? "--"}d production</div><div class="small">${item.totalP25 ?? "--"}-${item.totalP75 ?? "--"}d middle range</div><div class="bar" aria-hidden="true"><span style="width:${width}%"></span></div>` : `<div class="small">No full-date sample yet</div>`}
         </td>
         <td>${item.articles || 0} articles<div class="small">${Math.round((item.coverage || 0) * 100)}% coverage · ${confidenceLabel(item)}</div></td>
         <td>${subjectLabels(item).slice(0, 2).join(", ")}<div class="small">${fitLabel(item)}</div></td>

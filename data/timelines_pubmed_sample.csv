@@ -1,0 +1,5 @@
+title,issn,eissn,articles,coverage,submission_to_acceptance,acceptance_to_publication,submission_to_publication,total_p25,total_p75,confidence,source,note
+Frontiers in psychology,1664-1078,,80,1.0,68,20,88,76,131,high,article_evidence,Aggregated from article-level lifecycle dates.
+BMC public health,1471-2458,,80,1.0,134,10,148,103,210,high,article_evidence,Aggregated from article-level lifecycle dates.
+Journal of medical Internet research,1438-8871,,77,1.0,151,47,207,139,274,high,article_evidence,Aggregated from article-level lifecycle dates.
+PloS one,1932-6203,,78,1.0,186,24,211,152,303,high,article_evidence,Aggregated from article-level lifecycle dates.

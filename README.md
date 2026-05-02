@@ -32,13 +32,17 @@ The timeline layer computes journal-level medians:
 - `index.html` - static dashboard prototype with demo data
 - `data/journals.json` - generated journal registry consumed by the dashboard
 - `data/scopus_registry.csv` - normalized Scopus source title list
-- `data/timelines_seed.csv` - seed timeline aggregates used while the harvester is being built
+- `data/article_evidence_template.csv` - article-level evidence schema
+- `data/article_evidence_pubmed_sample.csv` - harvested article-level PubMed evidence sample
+- `data/timelines_pubmed_sample.csv` - journal-level medians/ranges aggregated from article rows
 - `data/source_manifest.json` - source provenance and pending sources
 - `fetch_pubmed.py` - PubMed data fetcher and parser
 - `scripts/normalize_journals.py` - CSV normalizer for official journal lists
 - `scripts/xlsx_to_registry.py` - standard-library XLSX converter for registry exports
 - `scripts/merge_timelines.py` - joins timeline evidence into the registry by ISSN/eISSN
 - `scripts/harvest_pubmed_timelines.py` - batch PubMed lifecycle-date harvester for journals with ISSN/eISSN
+- `scripts/harvest_pubmed_articles.py` - article-level PubMed lifecycle-date harvester
+- `scripts/aggregate_article_evidence.py` - aggregates raw article evidence into journal timelines
 - `data/import_template.csv` - registry import format
 - `data/source_strategy.md` - long-term source plan
 - `README.md` - project notes and data assumptions
@@ -49,7 +53,7 @@ This project should not fake precision. If a journal or publisher does not depos
 
 The current generated registry includes the official Elsevier Scopus Source title list for March 2026. Web of Science collection downloads require a free Master Journal List login. ABDC should use the official Journal Quality List release; the completed list currently available from ABDC is 2022, while ABDC has a 2025 review process underway.
 
-Scopus and Web of Science title lists do not include manuscript lifecycle dates. Publication timeline estimates must be harvested separately from article metadata, then joined back to journals by ISSN/eISSN/title.
+Scopus and Web of Science title lists do not include manuscript lifecycle dates. Publication timeline estimates are harvested separately from article metadata, aggregated from article rows, then joined back to journals by ISSN/eISSN/title.
 
 ## Current Product Features
 
@@ -72,11 +76,14 @@ Scopus and Web of Science title lists do not include manuscript lifecycle dates.
 
 ```powershell
 python scripts\normalize_journals.py data\scopus_registry.csv -o data\journals_registry.json
-python scripts\merge_timelines.py data\journals_registry.json data\timelines_seed.csv -o data\journals.json
+python scripts\aggregate_article_evidence.py data\article_evidence_pubmed_sample.csv -o data\timelines_pubmed_sample.csv
+python scripts\merge_timelines.py data\journals_registry.json data\timelines_pubmed_sample.csv -o data\journals.json
 ```
 
 To grow the timeline evidence from PubMed:
 
 ```powershell
-python scripts\harvest_pubmed_timelines.py data\journals.json -o data\timelines_pubmed.csv --limit-journals 100 --articles-per-journal 80
+python scripts\harvest_pubmed_articles.py data\journals_registry.json -o data\article_evidence_pubmed.csv --limit-journals 100 --articles-per-journal 120 --years 8
+python scripts\aggregate_article_evidence.py data\article_evidence_pubmed.csv -o data\timelines_pubmed.csv
+python scripts\merge_timelines.py data\journals_registry.json data\timelines_pubmed.csv -o data\journals.json
 ```
