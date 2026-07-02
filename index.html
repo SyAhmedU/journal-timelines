@@ -207,12 +207,54 @@
     text-align: center;
   }
 
+  /* Why-unknown tooltip */
+  .tip { position: relative; cursor: help; border-bottom: 1px dotted var(--muted); }
+  .tip::after {
+    content: attr(data-tip);
+    position: absolute; left: 0; bottom: calc(100% + 6px);
+    width: 240px; padding: 9px 11px;
+    background: var(--ink); color: #fff; border-radius: 8px;
+    font-size: 11.5px; font-weight: 400; line-height: 1.45;
+    opacity: 0; pointer-events: none; transition: opacity .15s;
+    z-index: 30;
+  }
+  .tip:hover::after, .tip:focus::after { opacity: 1; }
+
+  /* pins + compare tray */
+  .pinbtn { border: 1px solid var(--line); background: white; border-radius: 7px; padding: 4px 8px; cursor: pointer; font-size: 12px; }
+  .pinbtn.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .cardbtn { border: 1px solid var(--line); background: white; border-radius: 7px; padding: 4px 8px; cursor: pointer; font-size: 12px; margin-left: 4px; }
+  .tray table { min-width: 0; }
+  .tray td, .tray th { padding: 9px 12px; }
+
+  /* insights */
+  .insights { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .insights .panel { padding: 14px 16px; }
+  .insights h3 { margin: 0 0 4px; font-size: 13px; }
+  .insights .note { color: var(--muted); font-size: 11.5px; margin: 0 0 10px; line-height: 1.4; }
+  .covrow { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 12px; }
+  .covrow .nm { width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .covrow .trk { flex: 1; height: 8px; border-radius: 5px; background: #e7ebf0; overflow: hidden; }
+  .covrow .trk i { display: block; height: 100%; background: var(--green); }
+  .covrow .v { width: 78px; text-align: right; color: var(--muted); font-size: 11px; }
+
+  /* saved filter sets */
+  .setchips { margin-top: 9px; }
+  .setchips .chip { cursor: pointer; }
+  .setchips .chip .x { margin-left: 4px; color: var(--red); font-weight: 700; }
+
+  /* mobile drawer */
+  #drawerToggle { display: none; }
+
   @media (max-width: 900px) {
     main { grid-template-columns: 1fr; }
-    aside { border-right: 0; border-bottom: 1px solid var(--line); }
+    aside { border-right: 0; border-bottom: 1px solid var(--line); display: none; }
+    aside.open { display: block; }
+    #drawerToggle { display: inline-block; margin-left: auto; border: 1px solid var(--line); background: white; border-radius: 8px; padding: 8px 13px; font-weight: 700; cursor: pointer; }
     .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     table { min-width: 920px; }
     .table-wrap { overflow-x: auto; }
+    .insights { grid-template-columns: 1fr; }
   }
 </style>
 <!-- SYED-GATE · entry password, re-locks every load · injected by research-suite/tools/gate/inject.mjs -->
@@ -246,6 +288,7 @@ mk();if(document.readyState==="loading")document.addEventListener("DOMContentLoa
       <h1>Journal Timelines</h1>
       <div class="sub">Find indexed journals and rank known options by publication speed.</div>
     </div>
+    <button id="drawerToggle" type="button">☰ Filters</button>
   </header>
 
   <main>
@@ -325,9 +368,17 @@ mk();if(document.readyState==="loading")document.addEventListener("DOMContentLoa
         <input id="minArticles" inputmode="numeric" placeholder="e.g. 25" />
       </div>
 
+      <div class="field">
+        <label for="deadline">I must publish by…</label>
+        <input id="deadline" type="date" />
+        <div class="small" style="margin-top:5px">Sets the max-days filter from today's date and keeps only journals with <strong>measured</strong> timelines — never estimates.</div>
+      </div>
+
       <button class="button" id="share">Copy master link</button>
       <button class="button secondary" id="exportCsv">Export current results</button>
+      <button class="button secondary" id="saveSet">★ Save this filter set</button>
       <button class="button secondary" id="clear">Clear filters</button>
+      <div class="setchips chips" id="setChips"></div>
 
       <div class="notice">
         Use known-timeline filters for fastest publishing options. Unknown means the journal is indexed, but we still need reliable article lifecycle evidence.
@@ -335,6 +386,19 @@ mk();if(document.readyState==="loading")document.addEventListener("DOMContentLoa
     </aside>
 
     <section class="workspace">
+      <div class="panel tray" id="tray" style="display:none;margin-bottom:18px">
+        <div class="panel-head">
+          <div class="panel-title">📌 Pinned for comparison</div>
+          <button class="pinbtn" id="clearPins" type="button">Clear all</button>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Journal</th><th>Total</th><th>Review</th><th>Production</th><th>Evidence</th><th>ABDC</th><th></th></tr></thead>
+          <tbody id="trayRows"></tbody>
+        </table></div>
+      </div>
+
+      <div class="insights" id="insights"></div>
+
       <div class="stats">
         <div class="stat">
           <label>Journals</label>
@@ -440,6 +504,7 @@ const els = {
   sortBy: document.getElementById("sortBy"),
   maxDays: document.getElementById("maxDays"),
   minArticles: document.getElementById("minArticles"),
+  deadline: document.getElementById("deadline"),
   rows: document.getElementById("rows"),
   resultSummary: document.getElementById("result-summary"),
   statJournals: document.getElementById("stat-journals"),
@@ -448,8 +513,17 @@ const els = {
   statFastest: document.getElementById("stat-fastest"),
   share: document.getElementById("share"),
   exportCsv: document.getElementById("exportCsv"),
+  saveSet: document.getElementById("saveSet"),
+  setChips: document.getElementById("setChips"),
   clear: document.getElementById("clear"),
+  tray: document.getElementById("tray"),
+  trayRows: document.getElementById("trayRows"),
+  clearPins: document.getElementById("clearPins"),
+  insights: document.getElementById("insights"),
+  drawerToggle: document.getElementById("drawerToggle"),
 };
+
+const WHY_UNKNOWN = "Timeline medians are computed ONLY from real article lifecycle dates (currently PubMed's received/accepted/published fields). This journal is indexed, but no reliable full-date sample has been harvested yet — so we say Unknown rather than estimate.";
 
 function median(values) {
   if (!values.length) return null;
@@ -562,6 +636,168 @@ function filteredData() {
     });
 }
 
+// ── Pins (localStorage, keyed by normalized ISSN) ─────────────────────────
+const PIN_KEY = "jt_pins_v1";
+function loadPins() { try { return new Set(JSON.parse(localStorage.getItem(PIN_KEY) || "[]")); } catch { return new Set(); } }
+function savePins(set) { try { localStorage.setItem(PIN_KEY, JSON.stringify([...set])); } catch {} }
+let pins = loadPins();
+function pinKeyOf(item) { return normIssn(item.issn) || normIssn(item.eissn) || String(item.journal || ""); }
+
+function renderTray() {
+  const pinned = journals.filter(item => pins.has(pinKeyOf(item)));
+  els.tray.style.display = pinned.length ? "" : "none";
+  if (!pinned.length) return;
+  els.trayRows.innerHTML = pinned.map(item => {
+    const known = hasTimeline(item);
+    return `<tr>
+      <td><div class="journal">${item.journal || "Untitled"}</div><div class="publisher">${item.publisher || ""}</div></td>
+      <td><span class="score ${scoreClass(item.submissionToPublication)}">${known ? item.submissionToPublication + "d" : "Unknown"}</span></td>
+      <td>${known ? (item.submissionToAcceptance ?? "--") + "d" : "--"}</td>
+      <td>${known ? (item.acceptanceToPublication ?? "--") + "d" : "--"}</td>
+      <td>${item.articles || 0} articles</td>
+      <td>${item.abdcRating || "—"}</td>
+      <td><button class="pinbtn on" data-unpin="${pinKeyOf(item)}">Unpin</button></td>
+    </tr>`;
+  }).join("");
+  els.trayRows.querySelectorAll("[data-unpin]").forEach(btn => btn.addEventListener("click", () => {
+    pins.delete(btn.dataset.unpin); savePins(pins); renderTray(); render();
+  }));
+}
+
+// ── Insights (measured-only; honest about tiny coverage) ──────────────────
+function svgHistogram(values, binSize, width, height) {
+  if (!values.length) return "";
+  const maxV = Math.max(...values);
+  const bins = [];
+  for (let lo = 0; lo <= maxV; lo += binSize) bins.push({ lo, hi: lo + binSize, n: 0 });
+  for (const v of values) { const idx = Math.min(bins.length - 1, Math.floor(v / binSize)); bins[idx].n++; }
+  const maxN = Math.max(...bins.map(b => b.n), 1);
+  const bw = width / bins.length;
+  const bars = bins.map((b, i) => {
+    const h = b.n / maxN * (height - 18);
+    return `<rect x="${(i * bw + 1).toFixed(1)}" y="${(height - 14 - h).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="var(--blue)"/>` +
+      (b.n ? `<text x="${(i * bw + bw / 2).toFixed(1)}" y="${(height - 16 - h).toFixed(1)}" font-size="9" text-anchor="middle" fill="var(--muted)">${b.n}</text>` : "");
+  }).join("");
+  const labels = bins.map((b, i) => i % 2 === 0 ? `<text x="${(i * bw + bw / 2).toFixed(1)}" y="${height - 3}" font-size="8.5" text-anchor="middle" fill="var(--muted)">${b.lo}</text>` : "").join("");
+  return `<svg viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="days-to-accept histogram">${bars}${labels}</svg>`;
+}
+
+function svgBoxPlot(groups, width, rowH) {
+  // groups: [{label, values[]}] — draws min · p25 · median · p75 · max per row
+  const all = groups.flatMap(g => g.values);
+  if (!all.length) return "";
+  const maxV = Math.max(...all) * 1.08;
+  const labelW = 150;
+  const plotW = width - labelW - 10;
+  const x = v => labelW + v / maxV * plotW;
+  const q = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+  const rows = groups.map((g, i) => {
+    const y = i * rowH + rowH / 2;
+    const s = [...g.values].sort((a, b) => a - b);
+    const [mn, p25, md, p75, mx] = [s[0], q(s, .25), q(s, .5), q(s, .75), s[s.length - 1]];
+    return `<text x="0" y="${y + 3}" font-size="10" fill="var(--ink)">${g.label.slice(0, 24)}</text>` +
+      `<line x1="${x(mn)}" y1="${y}" x2="${x(mx)}" y2="${y}" stroke="var(--muted)" stroke-width="1"/>` +
+      `<rect x="${x(p25)}" y="${y - 5}" width="${Math.max(2, x(p75) - x(p25))}" height="10" rx="2" fill="rgba(37,99,235,.25)" stroke="var(--blue)"/>` +
+      `<line x1="${x(md)}" y1="${y - 6}" x2="${x(md)}" y2="${y + 6}" stroke="var(--blue)" stroke-width="2"/>` +
+      `<text x="${x(mx) + 4}" y="${y + 3}" font-size="9" fill="var(--muted)">${md}d · n=${g.values.length}</text>`;
+  }).join("");
+  return `<svg viewBox="0 0 ${width} ${groups.length * rowH}" width="100%" role="img" aria-label="field by median days box plot">${rows}</svg>`;
+}
+
+function renderInsights() {
+  const measured = journals.filter(hasTimeline);
+  let html = "";
+
+  // 1) days-to-accept histogram (measured only)
+  const reviewDays = measured.map(i => i.submissionToAcceptance).filter(v => v != null);
+  html += `<div class="panel"><h3>Days to accept — measured only</h3><p class="note">${reviewDays.length} journal${reviewDays.length === 1 ? "" : "s"} with real PubMed lifecycle medians. No estimates ever appear here.</p>`;
+  html += reviewDays.length ? svgHistogram(reviewDays, 30, 320, 110) : `<p class="note">No measured review times yet — run the PubMed harvest to add evidence.</p>`;
+  html += `</div>`;
+
+  // 2) field × median total days box plot (measured only)
+  const byField = {};
+  for (const item of measured) {
+    if (item.submissionToPublication == null) continue;
+    const label = subjectLabels(item)[0] || "Unknown";
+    (byField[label] = byField[label] || []).push(item.submissionToPublication);
+  }
+  const groups = Object.entries(byField).map(([label, values]) => ({ label, values })).sort((a, b) => b.values.length - a.values.length).slice(0, 8);
+  html += `<div class="panel"><h3>Total days by field — measured only</h3><p class="note">Box = middle 50%, line = median. Sparse for now: coverage grows as harvests run.</p>`;
+  html += groups.length ? svgBoxPlot(groups, 330, 26) : `<p class="note">Not enough measured journals to group by field yet.</p>`;
+  html += `</div>`;
+
+  // 3) coverage per field — honesty as a feature
+  const fieldTotals = {};
+  for (const item of journals) {
+    const label = subjectLabels(item)[0] || "Unknown";
+    const t = fieldTotals[label] = fieldTotals[label] || { total: 0, measured: 0 };
+    t.total++; if (hasTimeline(item)) t.measured++;
+  }
+  const covRows = Object.entries(fieldTotals).sort((a, b) => b[1].total - a[1].total).slice(0, 10);
+  html += `<div class="panel"><h3>Measured coverage by field</h3><p class="note">How much of each field has real timeline evidence vs honest Unknown. Currently biomedical-leaning (PubMed source).</p>`;
+  html += covRows.map(([label, { total, measured: m }]) => {
+    const pct = total ? (m / total * 100) : 0;
+    return `<div class="covrow"><span class="nm" title="${label}">${label}</span><span class="trk"><i style="width:${Math.max(pct, m ? 1 : 0)}%"></i></span><span class="v">${m}/${total.toLocaleString()}</span></div>`;
+  }).join("");
+  html += `</div>`;
+
+  els.insights.innerHTML = html;
+}
+
+// ── Per-journal share card (canvas PNG) ────────────────────────────────────
+function downloadShareCard(item) {
+  const c = document.createElement("canvas"); c.width = 1200; c.height = 630;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#f6f7f9"; ctx.fillRect(0, 0, 1200, 630);
+  ctx.fillStyle = "#2563eb"; ctx.fillRect(0, 0, 1200, 10);
+  ctx.fillStyle = "#17202a"; ctx.font = "700 30px system-ui, sans-serif";
+  ctx.fillText("Journal Timelines", 60, 84);
+  ctx.font = "800 52px Georgia, serif";
+  const title = String(item.journal || "Untitled journal");
+  ctx.fillText(title.length > 38 ? title.slice(0, 36) + "…" : title, 60, 180);
+  ctx.font = "400 26px system-ui, sans-serif"; ctx.fillStyle = "#657080";
+  ctx.fillText(`${item.publisher || "Unknown publisher"} · ISSN ${item.issn || "n/a"}`, 60, 228);
+  const known = hasTimeline(item);
+  ctx.font = "800 96px system-ui, sans-serif"; ctx.fillStyle = known ? "#11845b" : "#b7791f";
+  ctx.fillText(known ? `${item.submissionToPublication} days` : "Unknown", 60, 380);
+  ctx.font = "400 28px system-ui, sans-serif"; ctx.fillStyle = "#465365";
+  ctx.fillText(known
+    ? `submission → publication (median of ${item.articles || 0} real articles)`
+    : "indexed, but no measured lifecycle evidence yet — never estimated", 60, 430);
+  if (known) {
+    ctx.fillText(`review ${item.submissionToAcceptance ?? "--"}d · production ${item.acceptanceToPublication ?? "--"}d`, 60, 478);
+  }
+  ctx.font = "400 22px system-ui, sans-serif"; ctx.fillStyle = "#9aa3b0";
+  ctx.fillText("measured from PubMed article lifecycle dates · syahmedu.github.io/journal-timelines", 60, 580);
+  const a = document.createElement("a");
+  a.href = c.toDataURL("image/png");
+  a.download = `journal-timeline-${normIssn(item.issn) || "card"}.png`;
+  a.click();
+}
+
+// ── Saved filter sets ──────────────────────────────────────────────────────
+const SETS_KEY = "jt_filter_sets_v1";
+function loadSets() { try { return JSON.parse(localStorage.getItem(SETS_KEY) || "{}"); } catch { return {}; } }
+function saveSets(sets) { try { localStorage.setItem(SETS_KEY, JSON.stringify(sets)); } catch {} }
+function currentFilterState() {
+  return { q: els.query.value, field: els.field.value, index: els.indexSource.value, abdc: els.abdcRating.value, timeline: els.timelineStatus.value, sort: els.sortBy.value, maxDays: els.maxDays.value, minArticles: els.minArticles.value };
+}
+function applyFilterState(s) {
+  els.query.value = s.q || ""; els.field.value = s.field || "all"; els.indexSource.value = s.index || "all";
+  els.abdcRating.value = s.abdc || "all"; els.timelineStatus.value = s.timeline || "all"; els.sortBy.value = s.sort || "fastest-total";
+  els.maxDays.value = s.maxDays || ""; els.minArticles.value = s.minArticles || "";
+  rerenderWithUrl();
+}
+function renderSetChips() {
+  const sets = loadSets();
+  els.setChips.innerHTML = Object.keys(sets).map(name =>
+    `<span class="chip" data-set="${name}">${name}<span class="x" data-del="${name}">×</span></span>`).join("");
+  els.setChips.querySelectorAll("[data-set]").forEach(chip => chip.addEventListener("click", e => {
+    if (e.target.dataset.del) { const sets2 = loadSets(); delete sets2[e.target.dataset.del]; saveSets(sets2); renderSetChips(); return; }
+    applyFilterState(loadSets()[chip.dataset.set] || {});
+  }));
+}
+
 function render() {
   const data = filteredData();
   const timedData = data.filter(hasTimeline);
@@ -591,16 +827,20 @@ function render() {
       item.wos ? `WoS ${item.wosIndexes?.join("/") || ""}`.trim() : null,
     ].filter(Boolean);
 
+    const key = pinKeyOf(item);
     return `
       <tr>
         <td>
           <div class="journal">${item.journal || "Untitled journal"}</div>
           <div class="publisher">${item.publisher || "Unknown publisher"} · ISSN ${item.issn || "n/a"}${item.eissn ? ` · eISSN ${item.eissn}` : ""}</div>
+          <div style="margin-top:6px"><button class="pinbtn ${pins.has(key) ? "on" : ""}" data-pin="${key}">${pins.has(key) ? "📌 Pinned" : "📌 Pin"}</button><button class="cardbtn" data-card="${key}">🖼 Card</button></div>
         </td>
         <td>${indexes.length ? indexes.map(label => `<span class="badge">${label}</span>`).join("") : "Unverified"}</td>
         <td><span class="score ${item.abdcRating ? "fast" : "medium"}">${item.abdcRating || "Not listed"}</span></td>
         <td>
-          <span class="score ${scoreClass(item.submissionToPublication)}">${known ? `${item.submissionToPublication}d` : "Unknown"}</span>
+          ${known
+            ? `<span class="score ${scoreClass(item.submissionToPublication)}">${item.submissionToPublication}d</span>`
+            : `<span class="score medium tip" tabindex="0" data-tip="${WHY_UNKNOWN}">Unknown ⓘ</span>`}
           ${known ? `<div class="small">${item.submissionToAcceptance ?? "--"}d review · ${item.acceptanceToPublication ?? "--"}d production</div><div class="small">${item.totalP25 ?? "--"}-${item.totalP75 ?? "--"}d middle range</div><div class="bar" aria-hidden="true"><span style="width:${width}%"></span></div>` : `<div class="small">No full-date sample yet</div>`}
         </td>
         <td>${item.articles || 0} articles<div class="small">${Math.round((item.coverage || 0) * 100)}% coverage · ${confidenceLabel(item)}</div></td>
@@ -608,6 +848,16 @@ function render() {
       </tr>
     `;
   }).join("");
+
+  const byKey = new Map(visible.map(item => [pinKeyOf(item), item]));
+  els.rows.querySelectorAll("[data-pin]").forEach(btn => btn.addEventListener("click", () => {
+    const k = btn.dataset.pin;
+    if (pins.has(k)) pins.delete(k); else pins.add(k);
+    savePins(pins); renderTray(); render();
+  }));
+  els.rows.querySelectorAll("[data-card]").forEach(btn => btn.addEventListener("click", () => {
+    const item = byKey.get(btn.dataset.card); if (item) downloadShareCard(item);
+  }));
 }
 
 function updateUrl(push = false) {
@@ -701,6 +951,8 @@ async function loadRegistry() {
     const data = await response.json();
     journals = Array.isArray(data) ? data : [];
     render();
+    renderTray();
+    renderInsights();
   } catch (error) {
     els.resultSummary.textContent = "Could not load data/journals.json.";
     els.rows.innerHTML = `<tr><td colspan="6"><div class="empty">Registry failed to load.</div></td></tr>`;
@@ -720,10 +972,34 @@ els.clear.addEventListener("click", () => {
   els.sortBy.value = "fastest-total";
   els.maxDays.value = "";
   els.minArticles.value = "";
+  els.deadline.value = "";
   rerenderWithUrl();
 });
 
+// Deadline wizard — pure arithmetic from today's date; measured-only, never estimates.
+els.deadline.addEventListener("change", () => {
+  if (!els.deadline.value) return;
+  const target = new Date(els.deadline.value + "T00:00:00");
+  const days = Math.floor((target - new Date()) / 86400000);
+  if (days <= 0) { els.resultSummary.textContent = "That deadline is in the past — pick a future date."; return; }
+  els.maxDays.value = String(days);
+  els.timelineStatus.value = "known";
+  els.sortBy.value = "fastest-total";
+  rerenderWithUrl();
+});
+
+els.saveSet.addEventListener("click", () => {
+  const name = prompt("Name this filter set (e.g. “Mgmt A*, <180d”):");
+  if (!name || !name.trim()) return;
+  const sets = loadSets(); sets[name.trim().slice(0, 30)] = currentFilterState(); saveSets(sets);
+  renderSetChips();
+});
+
+els.clearPins.addEventListener("click", () => { pins = new Set(); savePins(pins); renderTray(); render(); });
+els.drawerToggle.addEventListener("click", () => document.querySelector("aside").classList.toggle("open"));
+
 applyUrl();
+renderSetChips();
 loadRegistry();
 </script>
 </body>
