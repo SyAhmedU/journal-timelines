@@ -4,18 +4,22 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Journal Timelines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #f6f7f9;
+    --fire1: #FF9656; --fire2: #F14575; --fire3: #9270F4;
+    --bg: #faf6ef;
     --panel: #ffffff;
-    --ink: #17202a;
-    --muted: #657080;
-    --line: #dce1e8;
-    --blue: #2563eb;
+    --ink: #241f2b;
+    --muted: #7b7387;
+    --line: #e8ddcf;
+    --blue: #d2447a; /* legacy var name — now the fire-rose accent */
     --green: #11845b;
     --amber: #b7791f;
     --red: #c2410c;
-    --chip: #eef2f7;
+    --chip: #f4ede1;
   }
 
   * { box-sizing: border-box; }
@@ -24,7 +28,7 @@
     min-height: 100vh;
     background: var(--bg);
     color: var(--ink);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     font-size: 14px;
   }
 
@@ -43,12 +47,13 @@
     border-radius: 8px;
     display: grid;
     place-items: center;
-    background: var(--blue);
+    background: linear-gradient(135deg, var(--fire1), var(--fire2) 55%, var(--fire3));
     color: white;
     font-weight: 800;
+    box-shadow: 0 4px 12px rgba(241,69,117,.28);
   }
 
-  h1 { margin: 0; font-size: 18px; line-height: 1.2; }
+  h1 { margin: 0; font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 21px; line-height: 1.2; letter-spacing: -.015em; }
   .sub { margin-top: 3px; color: var(--muted); font-size: 12px; }
 
   main {
@@ -59,7 +64,7 @@
 
   aside {
     border-right: 1px solid var(--line);
-    background: #fbfcfe;
+    background: #fdfaf4;
     padding: 18px;
   }
 
@@ -86,24 +91,26 @@
     outline: none;
   }
 
-  input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
+  input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(210, 68, 122, .13); }
   .field { margin-bottom: 15px; }
 
   .button {
     width: 100%;
     border: 0;
     border-radius: 8px;
-    background: var(--blue);
+    background: linear-gradient(135deg, var(--fire2), var(--fire3));
     color: white;
     font-weight: 700;
     padding: 11px 12px;
     cursor: pointer;
+    box-shadow: 0 4px 14px rgba(146,112,244,.25);
   }
 
   .button.secondary {
     margin-top: 9px;
-    background: #e8edf5;
+    background: #f2e9db;
     color: var(--ink);
+    box-shadow: none;
   }
 
   .notice {
@@ -172,7 +179,7 @@
     font-size: 11px;
     letter-spacing: .08em;
     text-transform: uppercase;
-    background: #fbfcfe;
+    background: #fdfaf4;
   }
 
   .journal { font-weight: 800; }
@@ -194,12 +201,12 @@
   .bar {
     height: 9px;
     border-radius: 999px;
-    background: #e7ebf0;
+    background: #efe6d7;
     overflow: hidden;
     min-width: 130px;
     margin-top: 8px;
   }
-  .bar > span { display: block; height: 100%; background: var(--blue); border-radius: inherit; }
+  .bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--fire1), var(--fire2) 60%, var(--fire3)); border-radius: inherit; }
 
   .empty {
     padding: 30px 16px;
@@ -234,7 +241,7 @@
   .insights .note { color: var(--muted); font-size: 11.5px; margin: 0 0 10px; line-height: 1.4; }
   .covrow { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 12px; }
   .covrow .nm { width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .covrow .trk { flex: 1; height: 8px; border-radius: 5px; background: #e7ebf0; overflow: hidden; }
+  .covrow .trk { flex: 1; height: 8px; border-radius: 5px; background: #efe6d7; overflow: hidden; }
   .covrow .trk i { display: block; height: 100%; background: var(--green); }
   .covrow .v { width: 78px; text-align: right; color: var(--muted); font-size: 11px; }
 
@@ -256,6 +263,67 @@
     .table-wrap { overflow-x: auto; }
     .insights { grid-template-columns: 1fr; }
   }
+
+  /* ── SYED-WAVE8 · "the reading room ledger" — bespoke elevation (hand-written) ── */
+  body::before { /* paper grain */
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+    opacity:.035; mix-blend-mode:multiply;
+  }
+  body::after { /* warm wash */
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(48% 40% at 82% 0%, rgba(255,150,86,.08), transparent 70%),
+      radial-gradient(40% 34% at 4% 92%, rgba(146,112,244,.06), transparent 70%);
+  }
+  header, main { position:relative; z-index:1; }
+  ::selection { background:rgba(241,69,117,.20); }
+  input, select { caret-color: var(--blue); }
+
+  /* gradient-ink title with slow drift */
+  h1 {
+    background:linear-gradient(100deg, var(--fire1), var(--fire2) 40%, var(--fire3) 75%, var(--fire1));
+    background-size:280% 100%; -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:sw8-ink 16s linear infinite;
+  }
+  @keyframes sw8-ink { to { background-position:-280% 0; } }
+
+  /* stat values in display type */
+  .stat .value { font-family:'Fraunces', Georgia, serif; font-weight:600; letter-spacing:-.01em; }
+  .stat { transition: box-shadow .18s, transform .18s; }
+  .stat:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(36,31,43,.08); }
+
+  /* speed bars draw themselves in on every render */
+  .bar > span, .covrow .trk i { animation:sw8-grow .7s cubic-bezier(.2,.7,.2,1) both; transform-origin:left; }
+  @keyframes sw8-grow { from { transform:scaleX(0); } }
+
+  /* row hover: warm lift */
+  tbody tr { transition: background .14s; }
+  tbody tr:hover { background:#fdf7ee; }
+
+  /* sheen sweep on the primary button */
+  .button:not(.secondary) { position:relative; overflow:hidden; }
+  .button:not(.secondary)::after {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(105deg, transparent 38%, rgba(255,255,255,.32) 50%, transparent 62%);
+    transform:translateX(-120%);
+  }
+  .button:not(.secondary):hover::after { animation:sw8-sheen .8s ease; }
+  @keyframes sw8-sheen { to { transform:translateX(120%); } }
+
+  /* gate-aware entrance */
+  @keyframes sw8-rise { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+  body.enter header { animation:sw8-rise .55s cubic-bezier(.2,.7,.2,1) both; }
+  body.enter aside  { animation:sw8-rise .55s cubic-bezier(.2,.7,.2,1) .10s both; }
+  body.enter .stats { animation:sw8-rise .55s cubic-bezier(.2,.7,.2,1) .18s both; }
+  body.enter .insights { animation:sw8-rise .6s cubic-bezier(.2,.7,.2,1) .26s both; }
+  body.enter .panel { animation:sw8-rise .6s cubic-bezier(.2,.7,.2,1) .32s both; }
+
+  @media (prefers-reduced-motion: reduce){
+    * { transition:none !important; animation:none !important; }
+  }
+  @media print { body::before, body::after { display:none; } }
+  /* ── /SYED-WAVE8 ── */
 </style>
 <!-- SYED-GATE · entry password, re-locks every load · injected by research-suite/tools/gate/inject.mjs -->
 <script>(function(){"use strict";
@@ -1001,6 +1069,19 @@ els.drawerToggle.addEventListener("click", () => document.querySelector("aside")
 applyUrl();
 renderSetChips();
 loadRegistry();
+
+// SYED-WAVE8 · entrance plays after the gate unlocks, not behind it
+(function () {
+  function play() {
+    document.body.classList.add("enter");
+    setTimeout(() => document.body.classList.remove("enter"), 1800);
+  }
+  const gate = document.getElementById("syed-gate");
+  if (!gate) { play(); return; }
+  new MutationObserver((_, obs) => {
+    if (!document.getElementById("syed-gate")) { obs.disconnect(); play(); }
+  }).observe(document.body, { childList: true });
+})();
 </script>
 </body>
 </html>
