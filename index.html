@@ -875,7 +875,8 @@ function render() {
   els.statKnown.textContent = timedData.length.toLocaleString();
   els.statTotal.textContent = timedData.length ? `${median(timedData.map(item => item.submissionToPublication))}d` : "--";
   els.statFastest.textContent = timedData.length ? `${timedData[0].submissionToPublication}d` : "--";
-  els.resultSummary.textContent = `${data.length.toLocaleString()} matching journals. ${timedData.length.toLocaleString()} have timeline evidence.`;
+  els.resultSummary.innerHTML = `${data.length.toLocaleString()} matching journals. ${timedData.length.toLocaleString()} have timeline evidence.`
+    + (timedData.length ? ` <span style="white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#6366f1;vertical-align:-1px"></span> review → <span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#22c55e;vertical-align:-1px"></span> production</span>` : "");
 
   if (!data.length) {
     els.rows.innerHTML = `<tr><td colspan="6"><div class="empty">No journals match the current filters.</div></td></tr>`;
@@ -909,7 +910,16 @@ function render() {
           ${known
             ? `<span class="score ${scoreClass(item.submissionToPublication)}">${item.submissionToPublication}d</span>`
             : `<span class="score medium tip" tabindex="0" data-tip="${WHY_UNKNOWN}">Unknown ⓘ</span>`}
-          ${known ? `<div class="small">${item.submissionToAcceptance ?? "--"}d review · ${item.acceptanceToPublication ?? "--"}d production</div><div class="small">${item.totalP25 ?? "--"}-${item.totalP75 ?? "--"}d middle range</div><div class="bar" aria-hidden="true"><span style="width:${width}%"></span></div>` : `<div class="small">No full-date sample yet</div>`}
+          ${known ? (() => {
+            const rev = item.submissionToAcceptance, prod = item.acceptanceToPublication;
+            const stacked = rev != null && prod != null && rev + prod > 0;
+            const revW = stacked ? Math.round((rev / maxTotal) * 100) : 0;
+            const prodW = stacked ? Math.round((prod / maxTotal) * 100) : 0;
+            return `<div class="small">${rev ?? "--"}d review · ${prod ?? "--"}d production</div><div class="small">${item.totalP25 ?? "--"}-${item.totalP75 ?? "--"}d middle range</div>` +
+              (stacked
+                ? `<div class="bar" aria-hidden="true" title="review ${rev}d → production ${prod}d (medians of ${item.articles || 0} real articles)" style="display:flex"><span style="width:${Math.max(4, revW)}%;background:#6366f1"></span><span style="width:${Math.max(3, prodW)}%;background:#22c55e"></span></div>`
+                : `<div class="bar" aria-hidden="true"><span style="width:${width}%"></span></div>`);
+          })() : `<div class="small">No full-date sample yet</div>`}
         </td>
         <td>${item.articles || 0} articles<div class="small">${Math.round((item.coverage || 0) * 100)}% coverage · ${confidenceLabel(item)}</div></td>
         <td>${subjectLabels(item).slice(0, 2).join(", ")}<div class="small">${fitLabel(item)}</div></td>
