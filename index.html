@@ -58,7 +58,7 @@
 
   main {
     display: grid;
-    grid-template-columns: 320px 1fr;
+    grid-template-columns: 320px minmax(0, 1fr);
     min-height: calc(100vh - 75px);
   }
 
@@ -254,7 +254,7 @@
   #drawerToggle { display: none; }
 
   @media (max-width: 900px) {
-    main { grid-template-columns: 1fr; }
+    main { grid-template-columns: minmax(0, 1fr); }
     aside { border-right: 0; border-bottom: 1px solid var(--line); display: none; }
     aside.open { display: block; }
     #drawerToggle { display: inline-block; margin-left: auto; border: 1px solid var(--line); background: white; border-radius: 8px; padding: 8px 13px; font-weight: 700; cursor: pointer; }
@@ -324,6 +324,10 @@
   }
   @media print { body::before, body::after { display:none; } }
   /* ── /SYED-WAVE8 ── */
+
+  /* Keep the comparison table inside its grid track. */
+  main > * { min-width: 0; }
+  .table-wrap { max-width: 100%; overflow-x: auto; }
 </style>
 <!-- SYED-GATE · entry password, re-locks every load · injected by research-suite/tools/gate/inject.mjs -->
 <script>(function(){"use strict";
