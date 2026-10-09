@@ -353,6 +353,9 @@ mk();if(document.readyState==="loading")document.addEventListener("DOMContentLoa
 })();</script>
 <!-- /SYED-GATE -->
 <link rel="stylesheet" href="product-design.css?v=20260912">
+<!-- RESEARCH-REFRESH:START -->
+<script defer src="research-refresh.js" data-config='{"slug":"journal-timelines","name":"Journal Timelines","sources":[{"label":"Registry and observed timings (8.5 MB)","path":"data/journals.json","kind":"json","note":"Latest published reference file; source provenance remains unchanged."},{"label":"Source manifest","path":"data/source_manifest.json","kind":"json","note":"Latest published reference file; source provenance remains unchanged."}],"description":"Obtain the latest published registry and timing evidence. Your current filters remain intact.","manual":"The registry and article histories are built by the maintained source pipeline. Missing timing evidence remains unknown."}'></script>
+<!-- RESEARCH-REFRESH:END -->
 </head>
 <body>
   <header>
@@ -500,6 +503,7 @@ mk();if(document.readyState==="loading")document.addEventListener("DOMContentLoa
           <div>
             <div class="panel-title">Fastest Publishing Journals</div>
             <div class="small" id="result-summary">Loading registry...</div>
+            <button type="button" id="refresh-registry">↻ Refresh published registry</button><span id="registry-refresh-status" class="small" role="status"></span>
           </div>
           <div class="chips">
             <span class="chip">Scopus</span>
@@ -1028,19 +1032,28 @@ function exportCurrentCsv() {
 }
 
 async function loadRegistry() {
+  const button = document.getElementById('refresh-registry');
+  const status = document.getElementById('registry-refresh-status');
+  button.disabled = true;
+  status.textContent = 'Fetching the latest published registry (about 8.5 MB)…';
   try {
     const response = await fetch("data/journals.json", { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    journals = Array.isArray(data) ? data : [];
+    if (!Array.isArray(data) || !data.length) throw new Error('Invalid registry response');
+    journals = data;
     render();
     renderTray();
     renderInsights();
+    status.textContent = 'Published registry refreshed at ' + new Date().toLocaleTimeString() + '. Source dates remain those in the source manifest; this is not a live Scopus re-verification.';
   } catch (error) {
-    els.resultSummary.textContent = "Could not load data/journals.json.";
-    els.rows.innerHTML = `<tr><td colspan="6"><div class="empty">Registry failed to load.</div></td></tr>`;
+    status.textContent = 'Registry refresh failed. Existing results and filters retained.';
+    if (!journals.length) els.resultSummary.textContent = 'Could not load data/journals.json. Retry the refresh.';
+  } finally {
+    button.disabled = false;
   }
 }
+document.getElementById('refresh-registry').addEventListener('click', loadRegistry);
 
 [els.query, els.maxDays, els.minArticles].forEach(el => el.addEventListener("input", rerenderWithUrl));
 [els.field, els.indexSource, els.abdcRating, els.timelineStatus, els.sortBy].forEach(el => el.addEventListener("change", rerenderWithUrl));
